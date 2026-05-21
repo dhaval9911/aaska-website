@@ -1,0 +1,14 @@
+node_modules
+.next
+dist
+coverage
+.turbo
+.pnpm-store
+.env
+.env.local
+.env.production
+*.log
+apps/web/.next
+apps/api/dist
+prisma/generated
+

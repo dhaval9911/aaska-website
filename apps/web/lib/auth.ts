@@ -1,0 +1,69 @@
+import NextAuth, { type NextAuthConfig } from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
+
+const apiUrl = process.env.API_BASE_URL ?? 'http://localhost:4000/api';
+
+export const authConfig: NextAuthConfig = {
+  session: {
+    strategy: 'jwt',
+  },
+  providers: [
+    Credentials({
+      name: 'Email and password',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        const response = await fetch(`${apiUrl}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: credentials.email,
+            password: credentials.password,
+          }),
+        });
+
+        if (!response.ok) {
+          return null;
+        }
+
+        const payload = await response.json();
+
+        return {
+          id: payload.user.id,
+          name: payload.user.name,
+          email: payload.user.email,
+          role: payload.user.role,
+          accessToken: payload.accessToken,
+        };
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role;
+        token.accessToken = user.accessToken;
+      }
+
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.role = token.role as string;
+      }
+
+      session.accessToken = token.accessToken as string;
+
+      return session;
+    },
+  },
+  pages: {
+    signIn: '/login',
+  },
+};
+
+export const { auth, handlers, signIn, signOut } = NextAuth(authConfig);
