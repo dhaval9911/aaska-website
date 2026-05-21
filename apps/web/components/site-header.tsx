@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Button, PageShell } from '@aaska/ui';
 
 import { auth } from '@/lib/auth';
+import { UserMenu } from './user-menu';
 
 const navItems = [
   { href: '/', label: 'Home' },
@@ -24,15 +25,13 @@ export async function SiteHeader() {
               {item.label}
             </Link>
           ))}
-          {session?.user?.role === 'ADMIN' && (
-            <Link className="transition hover:text-bark" href="/admin">
-              Admin
-            </Link>
-          )}
         </nav>
         <div className="flex items-center gap-3">
-          {session ? (
-            <span className="text-sm text-stone-500">{session.user?.name}</span>
+          {session?.user ? (
+            <UserMenu
+              name={session.user.name ?? session.user.email ?? 'Account'}
+              role={(session.user as { role?: string }).role ?? 'CUSTOMER'}
+            />
           ) : (
             <>
               <Link href="/login">
