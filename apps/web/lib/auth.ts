@@ -4,6 +4,7 @@ import Credentials from 'next-auth/providers/credentials';
 const apiUrl = process.env.API_BASE_URL ?? 'http://localhost:4000/api';
 
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   session: {
     strategy: 'jwt',
   },
