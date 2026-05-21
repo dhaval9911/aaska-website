@@ -4,6 +4,7 @@ import { businessCategories } from '@aaska/config';
 import { Button, Card, PageShell } from '@aaska/ui';
 
 import { apiFetch } from '@/lib/api';
+import { auth } from '@/lib/auth';
 
 interface Category {
   id: string;
@@ -23,7 +24,10 @@ interface Product {
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const products = await apiFetch<Product[]>('/products').catch(() => [] as Product[]);
+  const [session, products] = await Promise.all([
+    auth(),
+    apiFetch<Product[]>('/products').catch(() => [] as Product[]),
+  ]);
   const featured = products.slice(0, 3);
 
   return (
@@ -45,14 +49,16 @@ export default async function HomePage() {
               <Link href="/products">
                 <Button className="bg-white text-stone-950 hover:bg-stone-100">Shop now</Button>
               </Link>
-              <Link href="/register">
-                <Button
-                  variant="outline"
-                  className="border-stone-600 text-white hover:bg-stone-900"
-                >
-                  Create account
-                </Button>
-              </Link>
+              {!session && (
+                <Link href="/register">
+                  <Button
+                    variant="outline"
+                    className="border-stone-600 text-white hover:bg-stone-900"
+                  >
+                    Create account
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </Card>
