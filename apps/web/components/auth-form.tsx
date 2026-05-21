@@ -53,29 +53,42 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         return;
       }
 
-      router.push('/admin');
+      // Refresh server components so the header picks up the session,
+      // then send the user home (admin link appears automatically if ADMIN).
+      router.push('/');
+      router.refresh();
       return;
     }
 
+    // Registration flow
     const response = await fetch('/api/proxy/register', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(values),
     });
 
     if (!response.ok) {
-      setError('Unable to create your account right now.');
+      const body = await response.json().catch(() => ({}));
+      setError(
+        (body as { message?: string }).message ?? 'Unable to create your account right now.',
+      );
       return;
     }
 
-    await signIn('credentials', {
+    const signInResult = await signIn('credentials', {
       email: values.email,
       password: values.password,
       redirect: false,
     });
-    router.push('/admin');
+
+    if (signInResult?.error) {
+      setError('Account created. Please sign in.');
+      router.push('/login');
+      return;
+    }
+
+    router.push('/');
+    router.refresh();
   });
 
   return (
@@ -89,8 +102,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         </h1>
         <p className="text-sm text-stone-600">
           {isLogin
-            ? 'Use your email and password to access the admin and customer flows.'
-            : 'Registration is wired to the NestJS API and designed to grow into full checkout flows later.'}
+            ? 'Use your email and password to sign in.'
+            : 'Create an account to browse orders and manage your wishlist.'}
         </p>
       </div>
 
@@ -98,7 +111,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         {!isLogin ? (
           <label className="block space-y-2">
             <span className="text-sm font-medium text-stone-700">Name</span>
-            <Input {...form.register('name')} placeholder="Aaska Studio" />
+            <Input {...form.register('name')} placeholder="Your name" />
             {form.formState.errors.name ? (
               <span className="text-xs text-red-600">{form.formState.errors.name.message}</span>
             ) : null}
@@ -128,7 +141,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
         <Button className="w-full" disabled={form.formState.isSubmitting} type="submit">
-          {form.formState.isSubmitting ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}
+          {form.formState.isSubmitting ? 'Please wait…' : isLogin ? 'Sign in' : 'Create account'}
         </Button>
       </form>
 

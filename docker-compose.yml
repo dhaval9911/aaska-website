@@ -42,6 +42,9 @@ services:
     build:
       context: .
       dockerfile: ./apps/web/Dockerfile
+      args:
+        # NEXT_PUBLIC_* vars are baked at build time — must be passed as build args
+        NEXT_PUBLIC_API_URL: /api
     container_name: aaska-web
     restart: unless-stopped
     env_file:
@@ -51,8 +54,8 @@ services:
       PORT: 3000
       NEXTAUTH_URL: ${NEXTAUTH_URL}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      # Server-side: Next.js server talks to API via Docker internal hostname
       API_BASE_URL: http://api:4000/api
-      NEXT_PUBLIC_API_BASE_URL: /api
     depends_on:
       - api
 
@@ -71,4 +74,3 @@ services:
 volumes:
   postgres_data:
   uploads_data:
-

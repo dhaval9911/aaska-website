@@ -3,12 +3,15 @@ WORKDIR /app
 
 RUN corepack enable
 
-COPY package.json pnpm-workspace.yaml tsconfig.json eslint.config.mjs .prettierrc .lintstagedrc.cjs ./
-COPY prisma ./prisma
+# Accept NEXT_PUBLIC_* as build args — these get baked into the Next.js bundle
+ARG NEXT_PUBLIC_API_URL=/api
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.json eslint.config.mjs .prettierrc .lintstagedrc.cjs ./
 COPY apps/web ./apps/web
 COPY packages ./packages
 
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --frozen-lockfile
 RUN pnpm run build:packages
 RUN pnpm --filter @aaska/web build
 
