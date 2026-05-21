@@ -81,6 +81,9 @@ importers:
       dotenv:
         specifier: ^16.5.0
         version: 16.6.1
+      prisma:
+        specifier: ^6.8.2
+        version: 6.19.3(typescript@5.9.3)
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
