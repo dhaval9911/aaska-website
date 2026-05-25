@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Card, PageShell } from '@aaska/ui';
 
 import { apiFetch } from '@/lib/api';
+import { AddToCart } from '@/components/add-to-cart';
 
 interface Category {
   id: string;
@@ -59,13 +60,11 @@ export default async function ProductsPage() {
                   <h2 className="mt-1 font-bold text-stone-900 group-hover:text-bark">{p.name}</h2>
                   <p className="mt-1 line-clamp-2 text-sm text-stone-500">{p.description}</p>
                 </div>
-                <div className="flex items-baseline justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-lg font-black text-stone-900">
                     ₹{Number(p.price).toLocaleString('en-IN')}
                   </span>
-                  <span className="text-xs text-stone-400">
-                    {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
-                  </span>
+                  <AddToCart productId={p.id} stock={p.stock} size="sm" />
                 </div>
               </Card>
             </Link>

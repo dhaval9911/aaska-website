@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button, Card, PageShell } from '@aaska/ui';
 
 import { apiFetch } from '@/lib/api';
+import { AddToCart } from '@/components/add-to-cart';
 
 interface Category {
   id: string;
@@ -104,9 +105,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
 
           <div className="space-y-3">
-            <Button className="w-full" disabled={!inStock}>
-              {inStock ? 'Add to cart' : 'Out of stock'}
-            </Button>
+            <AddToCart productId={product.id} stock={product.stock} className="w-full" />
             <Button variant="outline" className="w-full">
               Contact for bulk order
             </Button>

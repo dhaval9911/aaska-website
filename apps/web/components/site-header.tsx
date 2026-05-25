@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Button, PageShell } from '@aaska/ui';
 
 import { auth } from '@/lib/auth';
+import { CartIcon } from './cart-icon';
 import { UserMenu } from './user-menu';
 
 const navItems = [
@@ -26,7 +27,8 @@ export async function SiteHeader() {
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <CartIcon />
           {session?.user ? (
             <UserMenu
               name={session.user.name ?? session.user.email ?? 'Account'}

@@ -53,8 +53,30 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         return;
       }
 
-      // Refresh server components so the header picks up the session,
-      // then send the user home (admin link appears automatically if ADMIN).
+      // Merge any guest cart into the user's cart (best-effort, non-blocking)
+      try {
+        const sessionId =
+          typeof window !== 'undefined' ? localStorage.getItem('cart_session') : null;
+        if (sessionId) {
+          const { getSession } = await import('next-auth/react');
+          const freshSession = await getSession();
+          const token = (freshSession as { accessToken?: string } | null)?.accessToken;
+          if (token) {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
+            await fetch(`${apiUrl}/cart/merge`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+                'x-cart-session': sessionId,
+              },
+            });
+          }
+        }
+      } catch {
+        // Non-critical — never block login on cart merge failure
+      }
+
       router.push('/');
       router.refresh();
       return;
