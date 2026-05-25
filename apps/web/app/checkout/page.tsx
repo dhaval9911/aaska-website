@@ -26,6 +26,8 @@ export default function CheckoutPage() {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string } | null)?.accessToken;
   const userName = session?.user?.name ?? '';
+  const savedWhatsapp =
+    (session?.user as { whatsappNumber?: string | null } | undefined)?.whatsappNumber ?? '';
 
   const { items, fetchCart, clearLocalCart } = useCartStore();
   const total = cartTotal(items);
@@ -45,6 +47,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (userName) setCustomerName(userName);
   }, [userName]);
+
+  useEffect(() => {
+    if (savedWhatsapp) setWhatsapp(savedWhatsapp);
+  }, [savedWhatsapp]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

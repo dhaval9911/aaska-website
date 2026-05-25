@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../prisma/prisma.module';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, WhatsappModule],
   controllers: [OrdersController],
   providers: [OrdersService],
 })

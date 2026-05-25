@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
@@ -16,7 +17,12 @@ interface CartItemSnapshot {
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(OrdersService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly whatsapp: WhatsappService,
+  ) {}
 
   async createOrder(
     userId: string | undefined,
@@ -70,6 +76,18 @@ export class OrdersService {
     // Clear cart after successful order creation
     await this.prisma.cartItem.deleteMany({ where: cartWhere });
 
+    // Send WhatsApp confirmation request — non-blocking; errors must never fail the order
+    this.whatsapp
+      .sendOrderConfirmationRequest({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        customerName: order.customerName,
+        whatsappNumber: order.whatsappNumber,
+        totalAmount: order.totalAmount.toString(),
+        items,
+      })
+      .catch((err) => this.logger.error('WhatsApp notification failed', err));
+
     return order;
   }
 
@@ -97,7 +115,26 @@ export class OrdersService {
   async updateStatus(id: string, dto: UpdateOrderStatusDto) {
     const order = await this.prisma.order.findUnique({ where: { id } });
     if (!order) throw new NotFoundException('Order not found.');
-    return this.prisma.order.update({ where: { id }, data: { status: dto.status } });
+    const updated = await this.prisma.order.update({ where: { id }, data: { status: dto.status } });
+
+    const notifyStatuses = ['SHIPPED', 'DELIVERED', 'CANCELLED'];
+    if (notifyStatuses.includes(dto.status)) {
+      this.whatsapp
+        .sendOrderStatusUpdate(
+          {
+            id: order.id,
+            orderNumber: order.orderNumber,
+            customerName: order.customerName,
+            whatsappNumber: order.whatsappNumber,
+            totalAmount: order.totalAmount.toString(),
+            items: [],
+          },
+          dto.status,
+        )
+        .catch((err) => this.logger.error('WhatsApp status update failed', err));
+    }
+
+    return updated;
   }
 
   /** AASKA-YYYY-NNN — resets counter each calendar year */

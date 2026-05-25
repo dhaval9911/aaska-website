@@ -17,6 +17,11 @@ const loginSchema = z.object({
 
 const registerSchema = loginSchema.extend({
   name: z.string().min(2),
+  whatsappNumber: z
+    .string()
+    .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number.')
+    .optional()
+    .or(z.literal('')),
 });
 
 type AuthMode = 'login' | 'register';
@@ -24,6 +29,7 @@ type AuthFormValues = {
   name?: string;
   email: string;
   password: string;
+  whatsappNumber?: string;
 };
 
 export function AuthForm({ mode }: { mode: AuthMode }) {
@@ -35,7 +41,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     defaultValues: {
       email: '',
       password: '',
-      ...(isLogin ? {} : { name: '' }),
+      ...(isLogin ? {} : { name: '', whatsappNumber: '' }),
     },
   });
 
@@ -83,10 +89,15 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     }
 
     // Registration flow
+    const { whatsappNumber, ...rest } = values;
+    const registerPayload = {
+      ...rest,
+      ...(whatsappNumber ? { whatsappNumber } : {}),
+    };
     const response = await fetch('/api/proxy/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(values),
+      body: JSON.stringify(registerPayload),
     });
 
     if (!response.ok) {
@@ -131,13 +142,45 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
       <form className="space-y-4" onSubmit={onSubmit}>
         {!isLogin ? (
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-stone-700">Name</span>
-            <Input {...form.register('name')} placeholder="Your name" />
-            {form.formState.errors.name ? (
-              <span className="text-xs text-red-600">{form.formState.errors.name.message}</span>
-            ) : null}
-          </label>
+          <>
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-stone-700">Name</span>
+              <Input {...form.register('name')} placeholder="Your name" />
+              {form.formState.errors.name ? (
+                <span className="text-xs text-red-600">{form.formState.errors.name.message}</span>
+              ) : null}
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-stone-700">
+                WhatsApp number <span className="font-normal text-stone-400">(optional)</span>
+              </span>
+              <div className="flex">
+                <span className="inline-flex items-center rounded-l-xl border border-r-0 border-stone-200 bg-stone-50 px-3 text-sm font-medium text-stone-500">
+                  +91
+                </span>
+                <Input
+                  {...form.register('whatsappNumber')}
+                  placeholder="9876543210"
+                  inputMode="numeric"
+                  className="rounded-l-none"
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    form.setValue('whatsappNumber', digits, { shouldValidate: true });
+                  }}
+                />
+              </div>
+              {form.formState.errors.whatsappNumber ? (
+                <span className="text-xs text-red-600">
+                  {form.formState.errors.whatsappNumber.message}
+                </span>
+              ) : (
+                <p className="text-xs text-stone-400">
+                  Pre-fills your WhatsApp at checkout so you don't have to type it again.
+                </p>
+              )}
+            </label>
+          </>
         ) : null}
 
         <label className="block space-y-2">

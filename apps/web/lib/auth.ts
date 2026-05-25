@@ -38,6 +38,7 @@ export const authConfig: NextAuthConfig = {
           name: payload.user.name,
           email: payload.user.email,
           role: payload.user.role,
+          whatsappNumber: payload.user.whatsappNumber ?? null,
           accessToken: payload.accessToken,
         };
       },
@@ -48,6 +49,7 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.role = user.role;
         token.accessToken = user.accessToken;
+        token.whatsappNumber = (user as { whatsappNumber?: string | null }).whatsappNumber ?? null;
       }
 
       return token;
@@ -55,6 +57,8 @@ export const authConfig: NextAuthConfig = {
     async session({ session, token }) {
       if (session.user) {
         session.user.role = token.role as string;
+        (session.user as { whatsappNumber?: string | null }).whatsappNumber =
+          (token.whatsappNumber as string | null) ?? null;
       }
 
       session.accessToken = token.accessToken as string;

@@ -31,6 +31,7 @@ export class AuthService {
         email: dto.email.toLowerCase(),
         password,
         role: Role.CUSTOMER,
+        whatsappNumber: dto.whatsappNumber ?? undefined,
       },
     });
 
@@ -55,7 +56,13 @@ export class AuthService {
     return this.buildAuthResponse(user);
   }
 
-  private buildAuthResponse(user: { id: string; name: string; email: string; role: Role }) {
+  private buildAuthResponse(user: {
+    id: string;
+    name: string;
+    email: string;
+    role: Role;
+    whatsappNumber?: string | null;
+  }) {
     const payload = {
       sub: user.id,
       email: user.email,
@@ -69,6 +76,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        whatsappNumber: user.whatsappNumber ?? null,
       },
     };
   }
