@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -40,6 +41,22 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard)
   getUserOrders(@Request() req: { user: { sub: string } }) {
     return this.ordersService.getUserOrders(req.user.sub);
+  }
+
+  /** Admin: all orders with optional status filter. */
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getAllOrders(@Query('status') status?: string) {
+    return this.ordersService.getAllOrders(status);
+  }
+
+  /** Admin: dashboard stats. */
+  @Get('admin/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getStats() {
+    return this.ordersService.getAdminStats();
   }
 
   /** Public order detail — orderId is a cuid (hard to guess). */

@@ -106,6 +106,47 @@ export class OrdersService {
     });
   }
 
+  async getAllOrders(status?: string) {
+    return this.prisma.order.findMany({
+      where: status ? { status: status as never } : undefined,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        orderNumber: true,
+        customerName: true,
+        whatsappNumber: true,
+        totalAmount: true,
+        status: true,
+        createdAt: true,
+        items: true,
+      },
+    });
+  }
+
+  async getAdminStats() {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [todayOrders, pendingConfirmations, monthRevenue] = await Promise.all([
+      this.prisma.order.count({ where: { createdAt: { gte: todayStart } } }),
+      this.prisma.order.count({ where: { status: 'PENDING_WHATSAPP' as never } }),
+      this.prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: {
+          createdAt: { gte: monthStart },
+          status: { notIn: ['CANCELLED'] as never[] },
+        },
+      }),
+    ]);
+
+    return {
+      todayOrders,
+      pendingConfirmations,
+      monthlyRevenue: Number(monthRevenue._sum.totalAmount ?? 0),
+    };
+  }
+
   async getOrderById(id: string) {
     const order = await this.prisma.order.findUnique({ where: { id } });
     if (!order) throw new NotFoundException('Order not found.');
