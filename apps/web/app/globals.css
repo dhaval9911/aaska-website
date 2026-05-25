@@ -12,6 +12,8 @@ body {
     radial-gradient(circle at top, rgba(183, 121, 74, 0.22), transparent 25%),
     linear-gradient(180deg, #f9f6f1 0%, #f3ece1 100%);
   color: #292524;
+  /* Remove 300 ms tap delay on mobile without disabling pinch-zoom */
+  touch-action: manipulation;
 }
 
 a {
