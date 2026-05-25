@@ -143,9 +143,12 @@ export function CartDrawer() {
                       {/* Qty stepper */}
                       <div className="flex items-center gap-1 rounded-lg border border-stone-200 p-0.5">
                         <button
-                          onClick={() => updateItem(item.id, item.quantity - 1, token)}
-                          disabled={item.quantity <= 1}
-                          className="flex h-6 w-6 items-center justify-center rounded-md text-stone-500 transition hover:bg-stone-100 disabled:opacity-30"
+                          onClick={() =>
+                            item.quantity <= 1
+                              ? removeItem(item.id, token)
+                              : updateItem(item.id, item.quantity - 1, token)
+                          }
+                          className="flex h-6 w-6 items-center justify-center rounded-md text-stone-500 transition hover:bg-stone-100"
                         >
                           <svg
                             className="h-3.5 w-3.5"
@@ -196,9 +199,9 @@ export function CartDrawer() {
               </span>
             </div>
             <p className="text-xs text-stone-400">Shipping calculated at checkout.</p>
-            <Button className="w-full" disabled>
-              Checkout — coming soon
-            </Button>
+            <Link href="/checkout" onClick={closeCart} className="block">
+              <Button className="w-full">Proceed to checkout</Button>
+            </Link>
           </div>
         )}
       </div>
