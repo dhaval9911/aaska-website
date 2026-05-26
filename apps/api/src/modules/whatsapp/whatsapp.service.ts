@@ -89,8 +89,12 @@ export class WhatsappService {
   async sendOrderStatusUpdate(order: OrderSnapshot, status: string): Promise<void> {
     try {
       const messages: Record<string, string> = {
-        SHIPPED: `Hi ${order.customerName}!\n\nYour order *#${order.orderNumber}* has been shipped. We will share tracking details shortly.`,
-        DELIVERED: `Hi ${order.customerName}!\n\nYour order *#${order.orderNumber}* has been delivered. We hope you love it. Thank you for shopping with Aaska!`,
+        CONFIRMED: `Hi ${order.customerName}!\n\nYour order *#${order.orderNumber}* has been confirmed. We will start processing it shortly.`,
+        PAYMENT_PENDING: `Hi ${order.customerName}!\n\nWe are waiting for your payment for order *#${order.orderNumber}*.\n\nUPI ID: *${this.upiId}*\n\nPlease send the payment screenshot once done.`,
+        PAID: `Hi ${order.customerName}!\n\nWe have received your payment for order *#${order.orderNumber}*. Thank you! We will start processing your order now.`,
+        PROCESSING: `Hi ${order.customerName}!\n\nYour order *#${order.orderNumber}* is now being processed. We will notify you once it ships.`,
+        SHIPPED: `Hi ${order.customerName}!\n\nGreat news! Your order *#${order.orderNumber}* has been shipped. We will share tracking details shortly.`,
+        DELIVERED: `Hi ${order.customerName}!\n\nYour order *#${order.orderNumber}* has been delivered. We hope you love it! Thank you for shopping with Aaska.`,
         CANCELLED: `Hi ${order.customerName}!\n\nYour order *#${order.orderNumber}* has been cancelled. If you have any questions please reply to this message.`,
       };
 

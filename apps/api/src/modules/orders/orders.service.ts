@@ -158,7 +158,15 @@ export class OrdersService {
     if (!order) throw new NotFoundException('Order not found.');
     const updated = await this.prisma.order.update({ where: { id }, data: { status: dto.status } });
 
-    const notifyStatuses = ['SHIPPED', 'DELIVERED', 'CANCELLED'];
+    const notifyStatuses = [
+      'CONFIRMED',
+      'PAYMENT_PENDING',
+      'PAID',
+      'PROCESSING',
+      'SHIPPED',
+      'DELIVERED',
+      'CANCELLED',
+    ];
     if (notifyStatuses.includes(dto.status)) {
       this.whatsapp
         .sendOrderStatusUpdate(
