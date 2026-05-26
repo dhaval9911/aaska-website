@@ -18,6 +18,16 @@ services:
       timeout: 5s
       retries: 5
 
+  whatsapp-service:
+    build:
+      context: ./services/whatsapp-service
+    container_name: whatsapp-service
+    restart: unless-stopped
+    volumes:
+      - whatsapp_auth:/app/.wwebjs_auth
+    ports:
+      - '3001:3001'
+
   api:
     build:
       context: .
@@ -32,15 +42,13 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       UPLOAD_DIR: /app/uploads
-      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
-      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
-      WHATSAPP_BUSINESS_ACCOUNT_ID: ${WHATSAPP_BUSINESS_ACCOUNT_ID:-}
-      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
-      UPI_ID: ${UPI_ID:-}
-      PUBLIC_URL: ${PUBLIC_URL:-http://localhost}
+      WHATSAPP_SERVICE_URL: ${WHATSAPP_SERVICE_URL:-http://whatsapp-service:3001}
+      UPI_ID: ${UPI_ID:-aaska@upi}
     depends_on:
       postgres:
         condition: service_healthy
+      whatsapp-service:
+        condition: service_started
     volumes:
       - uploads_data:/app/uploads
 
@@ -81,3 +89,4 @@ services:
 volumes:
   postgres_data:
   uploads_data:
+  whatsapp_auth:

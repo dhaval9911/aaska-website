@@ -157,3 +157,54 @@ pm2 start "pnpm --filter @aaska/web start" --name aaska-web
 - Add cart, checkout, orders, and payment integration
 - Introduce S3-compatible object storage adapter
 - Add CI, tests, and deployment automation
+
+## WhatsApp Setup
+
+Aaska uses a local [whatsapp-web.js](https://wwebjs.dev/) service to send order notifications directly from a linked WhatsApp account — no Meta Cloud API or business account required.
+
+### First-time setup
+
+**1. Start the WhatsApp service**
+
+```bash
+docker compose up -d --build whatsapp-service
+```
+
+**2. Watch the logs and scan the QR code**
+
+```bash
+docker logs -f whatsapp-service
+```
+
+A QR code will appear in the terminal output.
+
+**3. Link your device**
+
+On the WhatsApp account you want to send from:
+
+- Open WhatsApp
+- Go to **Settings → Linked Devices → Link a Device**
+- Scan the QR code shown in the terminal
+
+**4. Wait for the ready confirmation**
+
+Once linked you will see:
+
+```
+[WhatsApp] Client is ready — messages can be sent
+```
+
+The session is stored in the `whatsapp_auth` Docker volume and survives container restarts — you only need to scan once.
+
+### Environment variables
+
+| Variable               | Default                        | Description                                     |
+| ---------------------- | ------------------------------ | ----------------------------------------------- |
+| `WHATSAPP_SERVICE_URL` | `http://whatsapp-service:3001` | Internal URL for the WhatsApp service           |
+| `UPI_ID`               | `aaska@upi`                    | UPI ID included in payment instruction messages |
+
+### Troubleshooting
+
+- **QR not appearing** — run `docker logs whatsapp-service` and wait up to 30 s for Chromium to start
+- **Session expired** — remove the volume (`docker volume rm aaska-website_whatsapp_auth`) then re-scan
+- **Messages not sending** — check `GET http://localhost:3001/health` returns `{"status":"ready"}`

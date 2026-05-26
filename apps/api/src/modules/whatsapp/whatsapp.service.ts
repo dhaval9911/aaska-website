@@ -14,44 +14,32 @@ interface OrderSnapshot {
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
 
-  private get phoneNumberId() {
-    return process.env.WHATSAPP_PHONE_NUMBER_ID ?? '';
+  private get serviceUrl(): string {
+    return process.env.WHATSAPP_SERVICE_URL ?? 'http://whatsapp-service:3001';
   }
-  private get accessToken() {
-    return process.env.WHATSAPP_ACCESS_TOKEN ?? '';
-  }
-  private get apiUrl() {
-    return `https://graph.facebook.com/v19.0/${this.phoneNumberId}/messages`;
-  }
-  private get upiId() {
+
+  private get upiId(): string {
     return process.env.UPI_ID ?? 'aaska@upi';
   }
-  private get publicUrl() {
-    return process.env.PUBLIC_URL ?? 'http://localhost';
-  }
 
-  private isConfigured(): boolean {
-    return Boolean(this.phoneNumberId && this.accessToken);
-  }
+  /** Send a plain-text message via the local whatsapp-web.js service. */
+  private async send(number: string, message: string): Promise<void> {
+    const url = `${this.serviceUrl}/send`;
 
-  private async send(payload: Record<string, unknown>): Promise<void> {
-    if (!this.isConfigured()) {
-      this.logger.warn('WhatsApp not configured — skipping message send');
-      return;
-    }
-
-    const res = await fetch(this.apiUrl, {
+    const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.accessToken}`,
-      },
-      body: JSON.stringify({ messaging_product: 'whatsapp', ...payload }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number, message }),
     });
 
     if (!res.ok) {
       const body = await res.text();
-      this.logger.error(`WhatsApp API error ${res.status}: ${body}`);
+      throw new Error(`WhatsApp service responded ${res.status}: ${body}`);
+    }
+
+    const json = (await res.json()) as { success: boolean; error?: string };
+    if (!json.success) {
+      throw new Error(`WhatsApp service error: ${json.error ?? 'unknown'}`);
     }
   }
 
@@ -64,58 +52,34 @@ export class WhatsappService {
         )
         .join('\n');
 
-      const body =
-        `Hi ${order.customerName}! Your order *${order.orderNumber}* has been placed.\n\n` +
+      const message =
+        `Hi ${order.customerName}! \n\n` +
+        `Your order *#${order.orderNumber}* has been received.\n\n` +
         `*Items:*\n${itemLines}\n\n` +
         `*Total:* Rs ${Number(order.totalAmount).toLocaleString('en-IN')}\n\n` +
-        `Please confirm or cancel your order below.`;
+        `Reply on WhatsApp if you want customization details or have any questions.`;
 
-      await this.send({
-        recipient_type: 'individual',
-        to: order.whatsappNumber,
-        type: 'interactive',
-        interactive: {
-          type: 'button',
-          body: { text: body },
-          action: {
-            buttons: [
-              {
-                type: 'reply',
-                reply: { id: `confirm_${order.id}`, title: 'Confirm Order' },
-              },
-              {
-                type: 'reply',
-                reply: { id: `cancel_${order.id}`, title: 'Cancel' },
-              },
-            ],
-          },
-        },
-      });
-
-      this.logger.log(`Sent order confirmation request for ${order.orderNumber}`);
+      await this.send(order.whatsappNumber, message);
+      this.logger.log(
+        `Sent order confirmation for ${order.orderNumber} to ${order.whatsappNumber}`,
+      );
     } catch (err) {
-      this.logger.error('Failed to send order confirmation request', err);
+      this.logger.error('Failed to send order confirmation', err);
     }
   }
 
   async sendPaymentInstructions(order: OrderSnapshot): Promise<void> {
     try {
       const amount = Number(order.totalAmount).toLocaleString('en-IN');
-      const caption =
-        `Your order *${order.orderNumber}* is confirmed!\n\n` +
-        `Please pay *Rs ${amount}* to:\n` +
+
+      const message =
+        `Payment Details\n\n` +
+        `Order: *#${order.orderNumber}*\n\n` +
+        `Amount: *Rs ${amount}*\n\n` +
         `UPI ID: *${this.upiId}*\n\n` +
-        `After payment, send us the screenshot and we will process your order right away. Thank you!`;
+        `Please send the payment screenshot after completing payment and we will process your order right away.`;
 
-      await this.send({
-        to: order.whatsappNumber,
-        type: 'image',
-        image: {
-          link: `${this.publicUrl}/uploads/payment/upi-qr.jpg`,
-          caption,
-        },
-      });
-
+      await this.send(order.whatsappNumber, message);
       this.logger.log(`Sent payment instructions for ${order.orderNumber}`);
     } catch (err) {
       this.logger.error('Failed to send payment instructions', err);
@@ -125,20 +89,15 @@ export class WhatsappService {
   async sendOrderStatusUpdate(order: OrderSnapshot, status: string): Promise<void> {
     try {
       const messages: Record<string, string> = {
-        SHIPPED: `Great news! Your order *${order.orderNumber}* has been shipped. We will share tracking details shortly.`,
-        DELIVERED: `Your order *${order.orderNumber}* has been delivered! We hope you love it. Thank you for shopping with Aaska.`,
-        CANCELLED: `Your order *${order.orderNumber}* has been cancelled. If you have any questions please reply to this message.`,
+        SHIPPED: `Hi ${order.customerName}!\n\nYour order *#${order.orderNumber}* has been shipped. We will share tracking details shortly.`,
+        DELIVERED: `Hi ${order.customerName}!\n\nYour order *#${order.orderNumber}* has been delivered. We hope you love it. Thank you for shopping with Aaska!`,
+        CANCELLED: `Hi ${order.customerName}!\n\nYour order *#${order.orderNumber}* has been cancelled. If you have any questions please reply to this message.`,
       };
 
       const text = messages[status];
       if (!text) return;
 
-      await this.send({
-        to: order.whatsappNumber,
-        type: 'text',
-        text: { body: text },
-      });
-
+      await this.send(order.whatsappNumber, text);
       this.logger.log(`Sent status update (${status}) for ${order.orderNumber}`);
     } catch (err) {
       this.logger.error('Failed to send order status update', err);
