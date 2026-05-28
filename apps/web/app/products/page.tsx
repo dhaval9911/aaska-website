@@ -4,6 +4,7 @@ import { Card, PageShell } from '@aaska/ui';
 
 import { apiFetch } from '@/lib/api';
 import { AddToCart } from '@/components/add-to-cart';
+import { WishlistButton } from '@/components/wishlist-button';
 
 interface Category {
   id: string;
@@ -44,15 +45,30 @@ export default async function ProductsPage() {
           {products.map((p) => (
             <Link key={p.id} href={`/products/${p.slug}`} className="group">
               <Card className="h-full space-y-3 transition group-hover:shadow-md">
-                {p.images[0] ? (
-                  <img
-                    src={p.images[0]}
-                    alt={p.name}
-                    className="aspect-square w-full rounded-xl object-cover"
-                  />
-                ) : (
-                  <div className="aspect-square w-full rounded-xl bg-stone-100" />
-                )}
+                <div className="relative">
+                  {p.images[0] ? (
+                    <img
+                      src={p.images[0]}
+                      alt={p.name}
+                      className="aspect-square w-full rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="aspect-square w-full rounded-xl bg-stone-100" />
+                  )}
+                  <div className="absolute right-2 top-2">
+                    <WishlistButton
+                      item={{
+                        id: p.id,
+                        name: p.name,
+                        slug: p.slug,
+                        price: p.price,
+                        images: p.images,
+                        unit: p.unit,
+                      }}
+                      size="sm"
+                    />
+                  </div>
+                </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-stone-400">
                     {p.category.name}

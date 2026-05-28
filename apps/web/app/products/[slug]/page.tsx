@@ -5,6 +5,7 @@ import { Button, Card, PageShell } from '@aaska/ui';
 
 import { apiFetch } from '@/lib/api';
 import { AddToCart } from '@/components/add-to-cart';
+import { WishlistButton } from '@/components/wishlist-button';
 
 interface Category {
   id: string;
@@ -105,7 +106,20 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
 
           <div className="space-y-3">
-            <AddToCart productId={product.id} stock={product.stock} className="w-full" />
+            <div className="flex items-center gap-3">
+              <AddToCart productId={product.id} stock={product.stock} className="flex-1" />
+              <WishlistButton
+                item={{
+                  id: product.id,
+                  name: product.name,
+                  slug: product.slug,
+                  price: product.price,
+                  images: product.images,
+                  unit: product.unit,
+                }}
+                size="md"
+              />
+            </div>
             <Button variant="outline" className="w-full">
               Contact for bulk order
             </Button>

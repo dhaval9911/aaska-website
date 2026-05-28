@@ -1,8 +1,11 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+
+import { useWishlistStore } from '@/lib/wishlist-store';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -125,8 +128,11 @@ export function BottomTabBar() {
   const userName = session?.user?.name ?? session?.user?.email ?? '';
   const initial = userName.charAt(0).toUpperCase();
 
-  // Stub — replace with real wishlist store count when wishlist is built
-  const wishlistCount = 0;
+  // Wishlist count — read after hydration to avoid SSR mismatch
+  const [mounted, setMounted] = useState(false);
+  const wishlistItems = useWishlistStore((s) => s.items);
+  useEffect(() => setMounted(true), []);
+  const wishlistCount = mounted ? wishlistItems.length : 0;
 
   return (
     <nav
