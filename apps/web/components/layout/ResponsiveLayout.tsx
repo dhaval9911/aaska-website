@@ -36,8 +36,17 @@ function MobileLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col">
       <MobileTopBar />
       <CategoryDrawer />
-      {/* pt-14 clears the fixed top bar; pb-16 clears the fixed bottom tab bar */}
-      <main className="flex-1 pb-16 pt-14">{children}</main>
+      {/*
+       * pt-14  = 56px clears the fixed top bar
+       * pb accounts for the 64px tab bar + iOS safe-area-inset-bottom
+       * so content is never hidden behind either fixed bar or the home indicator
+       */}
+      <main
+        className="flex-1 pt-14"
+        style={{ paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
+      >
+        {children}
+      </main>
       <BottomTabBar />
     </div>
   );
