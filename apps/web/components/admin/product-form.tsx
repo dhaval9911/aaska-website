@@ -201,7 +201,12 @@ export function ProductForm({ categories, token, product }: ProductFormProps) {
             onChange={handleFileChange}
             className="text-sm text-stone-500"
           />
-          {uploading && <p className="text-xs text-stone-400">Uploading…</p>}
+          <p className="text-xs text-stone-400">
+            JPEG, PNG, WebP or HEIC — up to 30 MB each. Auto-compressed to WebP on upload.
+          </p>
+          {uploading && (
+            <p className="text-xs text-amber-600 font-medium">Compressing &amp; uploading…</p>
+          )}
         </div>
 
         {serverError && <p className="text-sm text-red-500">{serverError}</p>}

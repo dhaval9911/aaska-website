@@ -11,8 +11,15 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { StorageService } from './storage.service';
 
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_MIME = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/heic',
+  'image/heif',
+];
+const MAX_SIZE = 30 * 1024 * 1024; // 30 MB
 
 @Controller('storage')
 export class StorageController {
@@ -27,7 +34,7 @@ export class StorageController {
       throw new BadRequestException('Only JPEG, PNG, WebP, and GIF images are allowed.');
     }
     if (file.size > MAX_SIZE) {
-      throw new BadRequestException('File must be under 5 MB.');
+      throw new BadRequestException('File must be under 30 MB.');
     }
 
     const savedName = await this.storageService.save(file.originalname, file.buffer);
