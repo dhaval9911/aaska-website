@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
 import { useState } from 'react';
 
+import { CategoryDrawerProvider } from './context/CategoryDrawerContext';
 import { MobileProvider } from './mobile-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -12,7 +13,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
-        <MobileProvider>{children}</MobileProvider>
+        <MobileProvider>
+          <CategoryDrawerProvider>{children}</CategoryDrawerProvider>
+        </MobileProvider>
       </QueryClientProvider>
     </SessionProvider>
   );
