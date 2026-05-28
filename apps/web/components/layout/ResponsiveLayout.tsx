@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 
 import { useMobile } from '@/components/mobile-provider';
 import { BottomTabBar } from './BottomTabBar';
+import { CategoryDrawer } from './CategoryDrawer';
 import { MobileTopBar } from './MobileTopBar';
 
 interface LayoutProps {
@@ -34,6 +35,7 @@ function MobileLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <MobileTopBar />
+      <CategoryDrawer />
       {/* pt-14 clears the fixed top bar; pb-16 clears the fixed bottom tab bar */}
       <main className="flex-1 pb-16 pt-14">{children}</main>
       <BottomTabBar />
