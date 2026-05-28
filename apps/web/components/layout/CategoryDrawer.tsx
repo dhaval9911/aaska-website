@@ -272,7 +272,7 @@ export function CategoryDrawer() {
         {/* ── 6. WhatsApp support (pinned to bottom) ── */}
         <div className="shrink-0 border-t border-stone-200 p-4">
           <a
-            href={`https://wa.me/${appConfig.businessWhatsapp}?text=Hi%20Aaska!%20I%20need%20some%20help.`}
+            href={`https://wa.me/${appConfig.businessWhatsapp}?text=Hi%20Resin%20Dreams!%20I%20need%20some%20help.`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={close}

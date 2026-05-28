@@ -64,7 +64,9 @@ export default async function HomePage() {
         </Card>
 
         <Card className="bg-white/80">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-clay">Why Aaska</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-clay">
+            Why Resin Dreams
+          </p>
           <div className="mt-4 grid gap-4">
             {[
               'All pieces handcrafted to order',

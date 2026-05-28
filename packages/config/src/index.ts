@@ -1,9 +1,10 @@
 export const appConfig = {
-  name: 'Aaska',
-  description: 'Production-ready resin art e-commerce platform foundation.',
+  name: 'Resin Dreams',
+  description:
+    'Handcrafted resin art — frames, keychains, flower preservation, custom gifts and raw materials.',
   apiPrefix: '/api',
   /** Business WhatsApp number with country code — update before going live */
-  businessWhatsapp: '919999999999',
+  businessWhatsapp: '919016647981',
 };
 
 export const businessCategories = {

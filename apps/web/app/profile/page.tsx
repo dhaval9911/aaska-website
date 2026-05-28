@@ -8,7 +8,7 @@ import { auth } from '@/lib/auth';
 import { SignOutButton } from './sign-out-button';
 import { WishlistCountStat } from './wishlist-count-stat';
 
-export const metadata: Metadata = { title: 'My Account — Aaska' };
+export const metadata: Metadata = { title: 'My Account — Resin Dreams' };
 
 const SERVER_API = process.env.API_BASE_URL ?? 'http://localhost:4000/api';
 
@@ -224,7 +224,9 @@ export default async function ProfilePage() {
       {/* ── Sign out ── */}
       <SignOutButton />
 
-      <p className="pb-6 text-center text-xs text-stone-400">Signed in as {user.email}</p>
+      <p className="pb-6 text-center text-xs text-stone-400">
+        Resin Dreams &bull; Signed in as {user.email}
+      </p>
     </PageShell>
   );
 }

@@ -74,7 +74,7 @@ export default async function AdminOrderDetailPage({
 
   // Build WhatsApp message customer link
   const waMessage = encodeURIComponent(
-    `Hi ${order.customerName}! This is Aaska regarding your order *${order.orderNumber}*. `,
+    `Hi ${order.customerName}! This is Resin Dreams regarding your order *${order.orderNumber}*. `,
   );
   const waLink = `https://wa.me/${appConfig.businessWhatsapp.startsWith('91') ? '' : '91'}${order.whatsappNumber}?text=${waMessage}`;
 

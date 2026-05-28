@@ -5,7 +5,7 @@ import { Button, Card, PageShell } from '@aaska/ui';
 
 import { auth } from '@/lib/auth';
 
-export const metadata = { title: 'My Orders — Aaska' };
+export const metadata = { title: 'My Orders — Resin Dreams' };
 
 const SERVER_API = process.env.API_BASE_URL ?? 'http://localhost:4000/api';
 

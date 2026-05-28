@@ -131,7 +131,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           {isLogin ? 'Welcome back' : 'Create your account'}
         </p>
         <h1 className="text-3xl font-bold text-stone-900">
-          {isLogin ? 'Sign in to Aaska' : 'Start building your Aaska profile'}
+          {isLogin ? 'Sign in to Resin Dreams' : 'Create your Resin Dreams account'}
         </h1>
         <p className="text-sm text-stone-600">
           {isLogin

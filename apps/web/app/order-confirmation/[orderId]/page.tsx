@@ -61,7 +61,7 @@ export default async function OrderConfirmationPage({
 
   const waText = encodeURIComponent(
     [
-      `Hi Aaska! I would like to confirm my order *${order.orderNumber}*.`,
+      `Hi Resin Dreams! I would like to confirm my order *${order.orderNumber}*.`,
       '',
       '*Items:*',
       itemLines,

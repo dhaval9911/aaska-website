@@ -61,10 +61,10 @@ export function MobileTopBar() {
           <div className="pointer-events-none absolute inset-x-0 flex justify-center">
             <Link
               href="/"
-              className="pointer-events-auto text-xl font-black tracking-[0.2em] text-bark"
-              aria-label="Aaska home"
+              className="pointer-events-auto text-lg font-black tracking-wide text-bark"
+              aria-label="Resin Dreams home"
             >
-              AASKA
+              Resin Dreams
             </Link>
           </div>
 

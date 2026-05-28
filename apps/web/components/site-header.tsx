@@ -18,8 +18,8 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-white/75 backdrop-blur-xl">
       <PageShell className="flex h-20 items-center justify-between">
-        <Link className="text-2xl font-black tracking-[0.2em] text-bark" href="/">
-          AASKA
+        <Link className="text-2xl font-black tracking-wide text-bark" href="/">
+          Resin Dreams
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-stone-700 md:flex">
           {navItems.map((item) => (
