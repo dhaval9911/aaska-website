@@ -9,6 +9,7 @@ import { UserMenu } from './user-menu';
 const navItems = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Products' },
+  { href: '/contact', label: 'Contact' },
 ];
 
 export async function SiteHeader() {

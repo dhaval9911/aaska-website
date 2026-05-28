@@ -19,12 +19,28 @@ export interface CartItem {
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
 
+/**
+ * UUID generator that works in both secure (HTTPS) and insecure (HTTP LAN)
+ * contexts.  crypto.randomUUID() requires a secure context; on plain HTTP
+ * we fall back to a Math.random()-based v4 UUID.
+ */
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback for HTTP on local network
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 /** Stable guest session ID — generated once per browser, lives in localStorage. */
 function getSessionId(): string {
   if (typeof window === 'undefined') return '';
   let id = localStorage.getItem('cart_session');
   if (!id) {
-    id = crypto.randomUUID();
+    id = generateUUID();
     localStorage.setItem('cart_session', id);
   }
   return id;
