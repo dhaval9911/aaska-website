@@ -1,14 +1,19 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+
+import { Swiper, SwiperSlide } from 'swiper/react';
+import type { Swiper as SwiperType } from 'swiper';
+import 'swiper/css';
 
 import { appConfig } from '@aaska/config';
 
 import { useCartStore } from '@/lib/cart-store';
 import { WishlistButton } from '@/components/wishlist-button';
+import { Lightbox } from './ProductClientView';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,6 +32,8 @@ export interface MobileProductDetailProps {
     slug: string;
     description: string;
     price: string;
+    compareAtPrice: string | null;
+    showComparePrice: boolean;
     stock: number;
     unit: string;
     images: string[];
@@ -36,65 +43,60 @@ export interface MobileProductDetailProps {
 }
 
 // ---------------------------------------------------------------------------
-// Image carousel (CSS scroll-snap, no library)
+// Swiper carousel with dot indicators
 // ---------------------------------------------------------------------------
 
 function ImageCarousel({
   images,
   name,
   onBack,
+  onTap,
 }: {
   images: string[];
   name: string;
   onBack: () => void;
+  onTap: (idx: number) => void;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [swiper, setSwiper] = useState<SwiperType | null>(null);
   const [activeIdx, setActiveIdx] = useState(0);
-
-  function handleScroll() {
-    const el = scrollRef.current;
-    if (!el) return;
-    const idx = Math.round(el.scrollLeft / el.offsetWidth);
-    setActiveIdx(idx);
-  }
-
-  function scrollTo(idx: number) {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollTo({ left: idx * el.offsetWidth, behavior: 'smooth' });
-  }
 
   const imgs = images.length > 0 ? images : [null];
 
   return (
     <div className="relative w-full">
-      {/* Scroll container */}
-      <div
-        ref={scrollRef}
-        onScroll={handleScroll}
-        className="no-scrollbar flex snap-x snap-mandatory overflow-x-scroll"
-        style={{ scrollSnapType: 'x mandatory' }}
+      <Swiper
+        onSwiper={setSwiper}
+        onSlideChange={(s) => setActiveIdx(s.activeIndex)}
+        slidesPerView={1}
+        loop={false}
+        className="w-full"
       >
         {imgs.map((src, i) => (
-          <div key={i} className="min-w-full snap-center" style={{ scrollSnapAlign: 'center' }}>
-            {src ? (
-              <img
-                src={src}
-                alt={i === 0 ? name : ''}
-                className="aspect-square w-full object-cover"
-                draggable={false}
-              />
-            ) : (
-              <div className="aspect-square w-full bg-stone-100" />
-            )}
-          </div>
+          <SwiperSlide key={i}>
+            <button
+              className="block w-full"
+              onClick={() => src && onTap(i)}
+              aria-label={src ? `View image ${i + 1} full size` : undefined}
+            >
+              {src ? (
+                <img
+                  src={src}
+                  alt={i === 0 ? name : ''}
+                  className="aspect-square w-full object-cover"
+                  draggable={false}
+                />
+              ) : (
+                <div className="aspect-square w-full bg-stone-100" />
+              )}
+            </button>
+          </SwiperSlide>
         ))}
-      </div>
+      </Swiper>
 
-      {/* Overlaid: back button (top-left) */}
+      {/* Back button */}
       <button
         onClick={onBack}
-        className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-stone-700 shadow backdrop-blur-sm transition active:bg-white"
+        className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-stone-700 shadow backdrop-blur-sm transition active:bg-white"
         aria-label="Go back"
       >
         <svg
@@ -108,13 +110,13 @@ function ImageCarousel({
         </svg>
       </button>
 
-      {/* Dot indicators (bottom center) */}
+      {/* Dot indicators */}
       {imgs.length > 1 && (
-        <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-1.5">
+        <div className="absolute bottom-3 left-0 right-0 z-10 flex items-center justify-center gap-1.5">
           {imgs.map((_, i) => (
             <button
               key={i}
-              onClick={() => scrollTo(i)}
+              onClick={() => swiper?.slideTo(i)}
               aria-label={`Image ${i + 1}`}
               className={`rounded-full transition-all duration-200 ${
                 i === activeIdx ? 'h-2 w-5 bg-white shadow' : 'h-2 w-2 bg-white/60'
@@ -122,6 +124,54 @@ function ImageCarousel({
             />
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Price display
+// ---------------------------------------------------------------------------
+
+function PriceDisplay({
+  price,
+  compareAtPrice,
+  showComparePrice,
+  unit,
+}: {
+  price: string;
+  compareAtPrice: string | null;
+  showComparePrice: boolean;
+  unit: string;
+}) {
+  const selling = Number(price);
+  const original = compareAtPrice ? Number(compareAtPrice) : null;
+  const isSale = showComparePrice && original !== null && original > selling;
+  const save = isSale ? original! - selling : 0;
+  const pct = isSale ? Math.round((save / original!) * 100) : 0;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        {isSale && (
+          <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
+            SALE
+          </span>
+        )}
+        <span className={`text-3xl font-black ${isSale ? 'text-[#D4860B]' : 'text-stone-900'}`}>
+          ₹{selling.toLocaleString('en-IN')}
+        </span>
+        {isSale && (
+          <span className="text-lg text-stone-400 line-through">
+            ₹{original!.toLocaleString('en-IN')}
+          </span>
+        )}
+        <span className="text-sm text-stone-400">/ {unit}</span>
+      </div>
+      {isSale && (
+        <p className="text-xs font-semibold text-green-600">
+          You save ₹{save.toLocaleString('en-IN')} ({pct}% off)
+        </p>
       )}
     </div>
   );
@@ -150,7 +200,7 @@ function AccordionItem({ title, children }: { title: string; children: React.Rea
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {open && <div className="pb-4 text-sm text-stone-500 leading-relaxed">{children}</div>}
+      {open && <div className="pb-4 text-sm leading-relaxed text-stone-500">{children}</div>}
     </div>
   );
 }
@@ -169,12 +219,12 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
   const [qty, setQty] = useState(1);
   const [descExpanded, setDescExpanded] = useState(false);
   const [cartState, setCartState] = useState<'idle' | 'loading' | 'done'>('idle');
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   const inStock = product.stock > 0;
   const maxQty = 10;
   const price = Number(product.price);
 
-  // Build WhatsApp order link
   const waText = encodeURIComponent(
     `Hi Resin Dreams! I'd like to order *${product.name}* (Qty: ${qty}) — ₹${(price * qty).toLocaleString('en-IN')}. Can you help?`,
   );
@@ -202,19 +252,23 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
     unit: product.unit,
   };
 
-  const isLongDesc = product.description?.length > 160;
+  const isLongDesc = (product.description?.length ?? 0) > 160;
 
   return (
-    /* Main scroll area — bottom is padded for the sticky action bar */
     <div className="pb-36">
-      {/* ── 1. Image carousel ── */}
-      <ImageCarousel images={product.images} name={product.name} onBack={() => router.back()} />
+      {/* ── 1. Swiper image carousel ── */}
+      <ImageCarousel
+        images={product.images}
+        name={product.name}
+        onBack={() => router.back()}
+        onTap={(idx) => setLightboxIdx(idx)}
+      />
 
       {/* ── 2. Product info ── */}
       <div className="space-y-4 px-4 pt-4">
-        {/* Category breadcrumb */}
+        {/* Category link */}
         <Link
-          href={`/products?category=${product.category.slug}`}
+          href={`/categories/${product.category.slug}`}
           className="text-xs font-semibold uppercase tracking-wider text-[#D4860B]"
         >
           {product.category.name}
@@ -224,11 +278,18 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
         <h1 className="text-2xl font-black leading-tight text-stone-900">{product.name}</h1>
 
         {/* Price */}
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-black text-stone-900">
-            ₹{price.toLocaleString('en-IN')}
+        <PriceDisplay
+          price={product.price}
+          compareAtPrice={product.compareAtPrice}
+          showComparePrice={product.showComparePrice}
+          unit={product.unit}
+        />
+
+        {/* Unit pill */}
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-lg border-2 border-stone-900 bg-stone-900 px-3.5 py-1.5 text-sm font-semibold text-white">
+            {product.unit}
           </span>
-          <span className="text-sm text-stone-400">/ {product.unit}</span>
         </div>
 
         {/* Stock badge */}
@@ -290,7 +351,7 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
         {product.description && (
           <div className="space-y-1">
             <p
-              className={`text-sm text-stone-600 leading-relaxed ${
+              className={`text-sm leading-relaxed text-stone-600 ${
                 !descExpanded && isLongDesc ? 'line-clamp-3' : ''
               }`}
             >
@@ -342,7 +403,6 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
       >
         {inStock ? (
           <div className="space-y-2.5">
-            {/* Row 1: Wishlist + Add to cart */}
             <div className="flex gap-2">
               <WishlistButton
                 item={wishlistItem}
@@ -366,12 +426,11 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
                     : `Add to cart — ₹${(price * qty).toLocaleString('en-IN')}`}
               </button>
             </div>
-            {/* Row 2: WhatsApp order */}
             <a
               href={waLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 text-sm font-semibold text-white shadow-sm transition active:scale-[.98] hover:bg-[#20ba58]"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#20ba58] active:scale-[.98]"
             >
               <svg className="h-4 w-4 fill-white" viewBox="0 0 24 24">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
@@ -380,7 +439,6 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
             </a>
           </div>
         ) : (
-          /* Out of stock */
           <div className="space-y-2.5">
             <button
               disabled
@@ -402,6 +460,15 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
           </div>
         )}
       </div>
+
+      {/* Lightbox */}
+      {lightboxIdx !== null && product.images.length > 0 && (
+        <Lightbox
+          images={product.images}
+          initialIndex={lightboxIdx}
+          onClose={() => setLightboxIdx(null)}
+        />
+      )}
     </div>
   );
 }
