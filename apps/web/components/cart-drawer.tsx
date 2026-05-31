@@ -201,8 +201,7 @@ export function CartDrawer() {
                         </span>
                         <button
                           onClick={() => updateItem(item.id, item.quantity + 1, token)}
-                          disabled={item.quantity >= item.product.stock}
-                          className="flex h-7 w-7 items-center justify-center text-stone-500 transition hover:bg-stone-100 disabled:opacity-30"
+                          className="flex h-7 w-7 items-center justify-center text-stone-500 transition hover:bg-stone-100"
                         >
                           <svg
                             className="h-3.5 w-3.5"

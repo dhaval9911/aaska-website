@@ -171,7 +171,7 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
   const [cartState, setCartState] = useState<'idle' | 'loading' | 'done'>('idle');
 
   const inStock = product.stock > 0;
-  const maxQty = Math.min(product.stock, 10);
+  const maxQty = 10;
   const price = Number(product.price);
 
   // Build WhatsApp order link
