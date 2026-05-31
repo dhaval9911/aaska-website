@@ -1,5 +1,7 @@
+import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsNumber,
@@ -9,7 +11,6 @@ import {
   MinLength,
 } from 'class-validator';
 import { ProductUnit } from '@prisma/client';
-import { Type } from 'class-transformer';
 
 export class CreateProductDto {
   @IsString()
@@ -28,6 +29,17 @@ export class CreateProductDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   price!: number;
+
+  /** "Was" / crossed-out price. Set showComparePrice: true to display it. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  compareAtPrice?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  showComparePrice?: boolean;
 
   @Type(() => Number)
   @IsNumber()

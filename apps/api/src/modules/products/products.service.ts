@@ -27,7 +27,6 @@ export class ProductsService {
       where: { slug },
       include: { category: true },
     });
-
     if (!product) throw new NotFoundException('Product not found.');
     return product;
   }
@@ -44,6 +43,8 @@ export class ProductsService {
         slug,
         description: dto.description,
         price: dto.price,
+        compareAtPrice: dto.compareAtPrice ?? null,
+        showComparePrice: dto.showComparePrice ?? false,
         stock: dto.stock,
         unit: dto.unit,
         images: dto.images ?? [],
@@ -70,6 +71,9 @@ export class ProductsService {
         ...(dto.slug !== undefined && { slug: dto.slug }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.price !== undefined && { price: dto.price }),
+        // compareAtPrice: null explicitly clears the field
+        ...(dto.compareAtPrice !== undefined && { compareAtPrice: dto.compareAtPrice }),
+        ...(dto.showComparePrice !== undefined && { showComparePrice: dto.showComparePrice }),
         ...(dto.stock !== undefined && { stock: dto.stock }),
         ...(dto.unit !== undefined && { unit: dto.unit }),
         ...(dto.images !== undefined && { images: dto.images }),

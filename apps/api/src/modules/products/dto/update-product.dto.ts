@@ -1,6 +1,15 @@
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
-import { ProductUnit } from '@prisma/client';
 import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+} from 'class-validator';
+import { ProductUnit } from '@prisma/client';
 
 export class UpdateProductDto {
   @IsOptional()
@@ -21,6 +30,17 @@ export class UpdateProductDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   price?: number;
+
+  /** "Was" / crossed-out price. Pass null to clear it. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  compareAtPrice?: number | null;
+
+  @IsOptional()
+  @IsBoolean()
+  showComparePrice?: boolean;
 
   @IsOptional()
   @Type(() => Number)
