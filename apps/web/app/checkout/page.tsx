@@ -8,6 +8,8 @@ import Link from 'next/link';
 import { Card, Input, PageShell } from '@aaska/ui';
 
 import { cartTotal, useCartStore } from '@/lib/cart-store';
+import useIsMobile from '@/hooks/useIsMobile';
+import { MobileCheckoutWizard } from '@/components/checkout/MobileCheckoutWizard';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
 
@@ -68,6 +70,11 @@ const TRUST_BADGES = [
 ];
 
 export default function CheckoutPage() {
+  const isMobile = useIsMobile();
+
+  // On mobile, render the step-wizard; desktop keeps the existing layout.
+  if (isMobile) return <MobileCheckoutWizard />;
+
   const router = useRouter();
   const { data: session } = useSession();
   const token = (session as { accessToken?: string } | null)?.accessToken;
