@@ -69,12 +69,9 @@ const TRUST_BADGES = [
   },
 ];
 
-export default function CheckoutPage() {
-  const isMobile = useIsMobile();
-
-  // On mobile, render the step-wizard; desktop keeps the existing layout.
-  if (isMobile) return <MobileCheckoutWizard />;
-
+// Desktop form — all hooks live in this component so the Rules of Hooks
+// are never violated by the isMobile conditional in the shell below.
+function DesktopCheckoutPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const token = (session as { accessToken?: string } | null)?.accessToken;
@@ -448,4 +445,11 @@ export default function CheckoutPage() {
       </div>
     </PageShell>
   );
+}
+
+// Shell — only calls useIsMobile, then delegates to the right component.
+// Keeps every component's hook list stable and unconditional.
+export default function CheckoutPage() {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileCheckoutWizard /> : <DesktopCheckoutPage />;
 }
