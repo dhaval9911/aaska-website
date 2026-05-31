@@ -65,7 +65,7 @@ interface CartState {
   closeCart: () => void;
 
   // Server sync
-  fetchCart: (token?: string) => Promise<void>;
+  fetchCart: (token?: string, silent?: boolean) => Promise<void>;
   addItem: (productId: string, quantity: number, token?: string) => Promise<void>;
   updateItem: (id: string, quantity: number, token?: string) => Promise<void>;
   removeItem: (id: string, token?: string) => Promise<void>;
@@ -82,8 +82,8 @@ export const useCartStore = create<CartState>((set, get) => ({
   closeCart: () => set({ isOpen: false }),
   clearLocalCart: () => set({ items: [] }),
 
-  fetchCart: async (token) => {
-    set({ loading: true });
+  fetchCart: async (token, silent = false) => {
+    if (!silent) set({ loading: true });
     try {
       const res = await fetch(`${API}/cart`, { headers: cartHeaders(token) });
       if (res.ok) {
@@ -91,7 +91,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         set({ items });
       }
     } finally {
-      set({ loading: false });
+      if (!silent) set({ loading: false });
     }
   },
 
@@ -109,13 +109,23 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   updateItem: async (id, quantity, token) => {
-    const res = await fetch(`${API}/cart/${id}`, {
-      method: 'PATCH',
-      headers: cartHeaders(token),
-      body: JSON.stringify({ quantity }),
-    });
-    if (!res.ok) throw new Error('Failed to update cart');
-    await get().fetchCart(token);
+    // Optimistic update — reflect the new quantity immediately, no loading flash
+    set((s) => ({
+      items: s.items.map((i) => (i.id === id ? { ...i, quantity } : i)),
+    }));
+    try {
+      const res = await fetch(`${API}/cart/${id}`, {
+        method: 'PATCH',
+        headers: cartHeaders(token),
+        body: JSON.stringify({ quantity }),
+      });
+      if (!res.ok) throw new Error('Failed to update cart');
+      // Silent background sync to stay consistent with server
+      await get().fetchCart(token, true);
+    } catch {
+      // Revert by re-fetching with spinner
+      await get().fetchCart(token);
+    }
   },
 
   removeItem: async (id, token) => {
