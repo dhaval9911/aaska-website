@@ -17,6 +17,8 @@ interface Product {
   slug: string;
   description: string;
   price: string;
+  compareAtPrice: string | null;
+  showComparePrice: boolean;
   stock: number;
   unit: string;
   images: string[];
@@ -60,6 +62,8 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
             | 'COMBO_KIT',
           images: product.images,
           categoryId: product.categoryId,
+          compareAtPrice: product.compareAtPrice,
+          showComparePrice: product.showComparePrice,
         }}
       />
     </PageShell>

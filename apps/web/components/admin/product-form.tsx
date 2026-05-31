@@ -12,15 +12,38 @@ import { apiFetch, apiUpload } from '@/lib/api';
 
 const UNITS = ['KG', 'LITRE', 'ML', 'METER', 'PACK', 'PIECE', 'BOTTLE', 'COMBO_KIT'] as const;
 
-const schema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
-  price: z.coerce.number().min(0, 'Price must be ≥ 0'),
-  stock: z.coerce.number().int().min(0, 'Stock must be ≥ 0'),
-  unit: z.enum(UNITS),
-  categoryId: z.string().min(1, 'Select a category'),
-  slug: z.string().optional(),
-});
+const schema = z
+  .object({
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    description: z.string().min(10, 'Description must be at least 10 characters'),
+    price: z.coerce.number().min(0, 'Price must be ≥ 0'),
+    showComparePrice: z.boolean().default(false),
+    compareAtPrice: z.preprocess((val) => {
+      if (val === '' || val === null || val === undefined) return undefined;
+      const n = Number(val);
+      return isNaN(n) ? undefined : n;
+    }, z.number().min(0, 'Must be ≥ 0').optional()),
+    stock: z.coerce.number().int().min(0, 'Stock must be ≥ 0'),
+    unit: z.enum(UNITS),
+    categoryId: z.string().min(1, 'Select a category'),
+    slug: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.showComparePrice) return;
+    if (data.compareAtPrice === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Original price is required when sale pricing is on',
+        path: ['compareAtPrice'],
+      });
+    } else if (data.compareAtPrice <= data.price) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Original price must be higher than selling price',
+        path: ['compareAtPrice'],
+      });
+    }
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -29,10 +52,24 @@ interface Category {
   name: string;
 }
 
+interface ExistingProduct {
+  id: string;
+  name: string;
+  slug?: string;
+  description: string;
+  price: number;
+  compareAtPrice?: number | string | null;
+  showComparePrice?: boolean;
+  stock: number;
+  unit: string;
+  categoryId: string;
+  images: string[];
+}
+
 interface ProductFormProps {
   categories: Category[];
   token: string;
-  product?: FormValues & { id: string; images: string[] };
+  product?: ExistingProduct;
 }
 
 export function ProductForm({ categories, token, product }: ProductFormProps) {
@@ -45,6 +82,8 @@ export function ProductForm({ categories, token, product }: ProductFormProps) {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -57,9 +96,16 @@ export function ProductForm({ categories, token, product }: ProductFormProps) {
           unit: product.unit as (typeof UNITS)[number],
           categoryId: product.categoryId,
           slug: product.slug,
+          showComparePrice: product.showComparePrice ?? false,
+          compareAtPrice:
+            product.compareAtPrice != null ? Number(product.compareAtPrice) : undefined,
         }
-      : { unit: 'PIECE' },
+      : { unit: 'PIECE', showComparePrice: false },
   });
+
+  const showComparePrice = watch('showComparePrice');
+  const sellingPrice = watch('price') ?? 0;
+  const compareAtPrice = watch('compareAtPrice') ?? 0;
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -80,16 +126,23 @@ export function ProductForm({ categories, token, product }: ProductFormProps) {
   async function onSubmit(values: FormValues) {
     setServerError('');
     try {
+      const payload = {
+        ...values,
+        images,
+        showComparePrice: values.showComparePrice,
+        compareAtPrice: values.showComparePrice ? (values.compareAtPrice ?? null) : null,
+      };
+
       if (product) {
         await apiFetch(`/products/${product.id}`, {
           method: 'PATCH',
-          body: JSON.stringify({ ...values, images }),
+          body: JSON.stringify(payload),
           token,
         });
       } else {
         await apiFetch('/products', {
           method: 'POST',
-          body: JSON.stringify({ ...values, images }),
+          body: JSON.stringify(payload),
           token,
         });
       }
@@ -131,7 +184,7 @@ export function ProductForm({ categories, token, product }: ProductFormProps) {
 
         <div className="grid gap-5 sm:grid-cols-3">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-stone-700">Price (₹) *</label>
+            <label className="text-sm font-medium text-stone-700">Selling Price (₹) *</label>
             <Input {...register('price')} type="number" step="0.01" min="0" placeholder="999" />
             {errors.price && <p className="text-xs text-red-500">{errors.price.message}</p>}
           </div>
@@ -155,6 +208,76 @@ export function ProductForm({ categories, token, product }: ProductFormProps) {
               ))}
             </select>
           </div>
+        </div>
+
+        {/* ── Sale Price ────────────────────────────────────────────────── */}
+        <div className="space-y-3 rounded-2xl border border-stone-200 bg-stone-50/60 px-4 py-4">
+          {/* Toggle row */}
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-stone-700">Show sale / compare price</label>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showComparePrice}
+              onClick={() =>
+                setValue('showComparePrice', !showComparePrice, { shouldValidate: true })
+              }
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+                showComparePrice ? 'bg-amber-500' : 'bg-stone-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  showComparePrice ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Revealed when toggle is ON */}
+          {showComparePrice && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-stone-700">
+                  Original Price / MRP (₹)
+                </label>
+                <Input
+                  {...register('compareAtPrice')}
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="2000"
+                />
+                <p className="text-xs text-stone-400">
+                  This will appear as a crossed-out price — e.g. ₹2000 crossed out, selling at ₹1000
+                </p>
+                {errors.compareAtPrice && (
+                  <p className="text-xs text-red-500">{errors.compareAtPrice.message}</p>
+                )}
+              </div>
+
+              {/* Live preview */}
+              {compareAtPrice > 0 && sellingPrice > 0 && compareAtPrice > sellingPrice && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-stone-200 bg-white px-4 py-3">
+                  <span className="text-sm text-stone-400 line-through">
+                    ₹{Number(compareAtPrice).toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-base font-bold text-stone-900">
+                    ₹{Number(sellingPrice).toLocaleString('en-IN')}
+                  </span>
+                  <span className="ml-auto rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                    SAVE ₹{(Number(compareAtPrice) - Number(sellingPrice)).toLocaleString('en-IN')}{' '}
+                    ·{' '}
+                    {Math.round(
+                      ((Number(compareAtPrice) - Number(sellingPrice)) / Number(compareAtPrice)) *
+                        100,
+                    )}
+                    % off
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="space-y-1.5">
