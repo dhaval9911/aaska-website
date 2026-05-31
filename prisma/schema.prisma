@@ -48,27 +48,40 @@ model User {
 }
 
 model Category {
-  id        String    @id @default(cuid())
-  name      String
-  slug      String    @unique
-  image     String?
-  products  Product[]
-  createdAt DateTime  @default(now())
+  id               String     @id @default(cuid())
+  name             String
+  slug             String     @unique
+  image            String?
+  // Self-relation for subcategory support
+  parentId         String?
+  parent           Category?  @relation("CategoryChildren", fields: [parentId], references: [id])
+  children         Category[] @relation("CategoryChildren")
+  // Homepage display fields
+  bannerImage      String?
+  homeTileImage    String?
+  featuredOnHome   Boolean    @default(false)
+  homeDisplayOrder Int        @default(0)
+  description      String?
+  products         Product[]
+  createdAt        DateTime   @default(now())
 }
 
 model Product {
-  id          String      @id @default(cuid())
-  name        String
-  slug        String      @unique
-  description String
-  price       Decimal     @db.Decimal(10, 2)
-  stock       Int
-  unit        ProductUnit
-  images      String[]
-  categoryId  String
-  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  cartItems   CartItem[]
-  createdAt   DateTime    @default(now())
+  id               String      @id @default(cuid())
+  name             String
+  slug             String      @unique
+  description      String
+  price            Decimal     @db.Decimal(10, 2)
+  // Compare-at / "was" price shown crossed-out next to the selling price
+  compareAtPrice   Decimal?    @db.Decimal(10, 2)
+  showComparePrice Boolean     @default(false)
+  stock            Int
+  unit             ProductUnit
+  images           String[]
+  categoryId       String
+  category         Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  cartItems        CartItem[]
+  createdAt        DateTime    @default(now())
 }
 
 model CartItem {
