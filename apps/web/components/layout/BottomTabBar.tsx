@@ -1,11 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-
-import { useWishlistStore } from '@/lib/wishlist-store';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -54,7 +51,7 @@ function ShopIcon({ active }: { active: boolean }) {
   );
 }
 
-function WishlistIcon({ active }: { active: boolean }) {
+function GalleryIcon({ active }: { active: boolean }) {
   return (
     <svg
       className="h-6 w-6"
@@ -66,7 +63,7 @@ function WishlistIcon({ active }: { active: boolean }) {
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+        d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
       />
     </svg>
   );
@@ -107,7 +104,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { key: 'home', label: 'Home', href: '/', exact: true },
   { key: 'shop', label: 'Shop', href: '/products' },
-  { key: 'wishlist', label: 'Wishlist', href: '/wishlist' },
+  { key: 'gallery', label: 'Gallery', href: '/gallery' },
   {
     key: 'account',
     label: 'Account',
@@ -127,12 +124,6 @@ export function BottomTabBar() {
   const isAuthed = status === 'authenticated' && !!session;
   const userName = session?.user?.name ?? session?.user?.email ?? '';
   const initial = userName.charAt(0).toUpperCase();
-
-  // Wishlist count — read after hydration to avoid SSR mismatch
-  const [mounted, setMounted] = useState(false);
-  const wishlistItems = useWishlistStore((s) => s.items);
-  useEffect(() => setMounted(true), []);
-  const wishlistCount = mounted ? wishlistItems.length : 0;
 
   return (
     <nav
@@ -176,15 +167,8 @@ export function BottomTabBar() {
                 <HomeIcon active={isActive} />
               ) : tab.key === 'shop' ? (
                 <ShopIcon active={isActive} />
-              ) : tab.key === 'wishlist' ? (
-                <>
-                  <WishlistIcon active={isActive} />
-                  {wishlistCount > 0 && (
-                    <span className="absolute -right-1.5 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold leading-none text-white">
-                      {wishlistCount > 99 ? '99+' : wishlistCount}
-                    </span>
-                  )}
-                </>
+              ) : tab.key === 'gallery' ? (
+                <GalleryIcon active={isActive} />
               ) : (
                 <AccountIcon active={isActive} />
               )}

@@ -18,6 +18,14 @@ const PRODUCT_SELECT = {
   images: true,
   unit: true,
   stock: true,
+  hasVariants: true,
+} as const;
+
+const VARIANT_SELECT = {
+  id: true,
+  label: true,
+  price: true,
+  stock: true,
 } as const;
 
 @Injectable()
@@ -30,7 +38,10 @@ export class CartService {
 
     return this.prisma.cartItem.findMany({
       where,
-      include: { product: { select: PRODUCT_SELECT } },
+      include: {
+        product: { select: PRODUCT_SELECT },
+        variant: { select: VARIANT_SELECT },
+      },
       orderBy: { createdAt: 'asc' },
     });
   }
@@ -40,21 +51,40 @@ export class CartService {
 
     const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
     if (!product) throw new NotFoundException('Product not found.');
-    if (product.stock === 0) throw new BadRequestException('Product is out of stock.');
+
+    // Variant validation
+    if (product.hasVariants) {
+      if (!dto.variantId) {
+        throw new BadRequestException('This product requires a variant selection.');
+      }
+      const variant = await this.prisma.productVariant.findFirst({
+        where: { id: dto.variantId, productId: dto.productId },
+      });
+      if (!variant) throw new NotFoundException('Variant not found.');
+      if (variant.stock === 0) throw new BadRequestException('This variant is out of stock.');
+    } else {
+      if (product.stock === 0) throw new BadRequestException('Product is out of stock.');
+    }
 
     const qty = dto.quantity ?? 1;
+    const variantId = product.hasVariants ? dto.variantId : undefined;
 
-    // Try to find existing item and increment, otherwise create
     if (userId) {
-      return this.upsertItem({ userId, productId: dto.productId }, { userId }, qty);
+      return this.upsertItem({ userId, productId: dto.productId }, { userId }, qty, variantId);
     }
-    return this.upsertItem({ sessionId: sessionId!, productId: dto.productId }, { sessionId }, qty);
+    return this.upsertItem(
+      { sessionId: sessionId!, productId: dto.productId },
+      { sessionId },
+      qty,
+      variantId,
+    );
   }
 
   private async upsertItem(
     uniqueWhere: { userId?: string; sessionId?: string; productId: string },
     createOwner: { userId?: string; sessionId?: string },
     qty: number,
+    variantId?: string,
   ) {
     const prismaWhere =
       'userId' in uniqueWhere && uniqueWhere.userId
@@ -68,17 +98,30 @@ export class CartService {
 
     const existing = await this.prisma.cartItem.findUnique({ where: prismaWhere });
 
+    const includeOpts = {
+      product: { select: PRODUCT_SELECT },
+      variant: { select: VARIANT_SELECT },
+    };
+
     if (existing) {
       return this.prisma.cartItem.update({
         where: { id: existing.id },
-        data: { quantity: existing.quantity + qty },
-        include: { product: { select: PRODUCT_SELECT } },
+        data: {
+          quantity: existing.quantity + qty,
+          ...(variantId !== undefined && { variantId }),
+        },
+        include: includeOpts,
       });
     }
 
     return this.prisma.cartItem.create({
-      data: { ...createOwner, productId: uniqueWhere.productId, quantity: qty },
-      include: { product: { select: PRODUCT_SELECT } },
+      data: {
+        ...createOwner,
+        productId: uniqueWhere.productId,
+        quantity: qty,
+        ...(variantId !== undefined && { variantId }),
+      },
+      include: includeOpts,
     });
   }
 
@@ -98,7 +141,10 @@ export class CartService {
     return this.prisma.cartItem.update({
       where: { id: item.id },
       data: { quantity: dto.quantity },
-      include: { product: { select: PRODUCT_SELECT } },
+      include: {
+        product: { select: PRODUCT_SELECT },
+        variant: { select: VARIANT_SELECT },
+      },
     });
   }
 
@@ -119,14 +165,12 @@ export class CartService {
       });
 
       if (existing) {
-        // Merge quantities into logged-in cart, drop guest item
         await this.prisma.cartItem.update({
           where: { id: existing.id },
           data: { quantity: existing.quantity + guestItem.quantity },
         });
         await this.prisma.cartItem.delete({ where: { id: guestItem.id } });
       } else {
-        // Re-assign guest item to the user
         await this.prisma.cartItem.update({
           where: { id: guestItem.id },
           data: { userId, sessionId: null },

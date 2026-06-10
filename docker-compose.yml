@@ -43,7 +43,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       UPLOAD_DIR: /app/uploads
       WHATSAPP_SERVICE_URL: ${WHATSAPP_SERVICE_URL:-http://whatsapp-service:3001}
-      UPI_ID: ${UPI_ID:-aaska@upi}
+      UPI_ID: ${UPI_ID:-aaska@upiaaskashivam0411@oksbi}
     depends_on:
       postgres:
         condition: service_healthy

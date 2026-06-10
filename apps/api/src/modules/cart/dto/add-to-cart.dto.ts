@@ -8,4 +8,12 @@ export class AddToCartDto {
   @IsInt()
   @Min(1)
   quantity?: number;
+
+  /**
+   * Required when the product has hasVariants=true.
+   * Identifies which variant the customer is purchasing.
+   */
+  @IsOptional()
+  @IsString()
+  variantId?: string;
 }

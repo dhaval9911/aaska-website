@@ -3,8 +3,25 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
 const PORT = process.env.PORT || 3001;
+
+// ---------------------------------------------------------------------------
+// Remove stale Chromium singleton lock files left by a crashed container.
+// Without this the browser refuses to start on every restart.
+// ---------------------------------------------------------------------------
+const AUTH_PATH = '/app/.wwebjs_auth/session';
+['SingletonLock', 'SingletonSocket', 'SingletonCookie'].forEach((name) => {
+  const p = path.join(AUTH_PATH, name);
+  try {
+    fs.unlinkSync(p);
+    console.log(`[WhatsApp] Removed stale lock file: ${name}`);
+  } catch (_) {
+    // file doesn't exist — that's fine
+  }
+});
 
 // ---------------------------------------------------------------------------
 // WhatsApp client

@@ -23,10 +23,9 @@ export async function generateMetadata({
   const category = await apiFetch<CategoryDetail>(`/categories/${slug}`).catch(() => null);
   if (!category) return {};
   return {
-    title: `${category.name} — Aaska`,
+    title: `${category.name} | Resin Dreams`,
     description:
-      category.description ??
-      `Browse ${category.name} — handcrafted resin art and raw materials at Aaska.`,
+      category.description ?? `Shop ${category.name} — handcrafted resin art and raw materials.`,
   };
 }
 

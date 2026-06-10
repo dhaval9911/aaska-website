@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
@@ -59,12 +60,15 @@ export function MobileTopBar() {
 
           {/* ── Centre: logo (absolutely centred so it never shifts) ── */}
           <div className="pointer-events-none absolute inset-x-0 flex justify-center">
-            <Link
-              href="/"
-              className="pointer-events-auto text-lg font-black tracking-wide text-bark"
-              aria-label="Resin Dreams home"
-            >
-              Resin Dreams
+            <Link href="/" className="pointer-events-auto" aria-label="Resin Dreams home">
+              <Image
+                src="/logo.png"
+                alt="Resin Dreams"
+                width={100}
+                height={100}
+                priority
+                className="h-9 w-auto object-contain"
+              />
             </Link>
           </div>
 

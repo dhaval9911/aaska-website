@@ -13,8 +13,10 @@ export interface CartProduct {
 export interface CartItem {
   id: string;
   productId: string;
+  variantId: string | null;
   quantity: number;
   product: CartProduct;
+  variant: { id: string; label: string; price: string; stock: number } | null;
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
@@ -66,7 +68,12 @@ interface CartState {
 
   // Server sync
   fetchCart: (token?: string, silent?: boolean) => Promise<void>;
-  addItem: (productId: string, quantity: number, token?: string) => Promise<void>;
+  addItem: (
+    productId: string,
+    quantity: number,
+    token?: string,
+    variantId?: string,
+  ) => Promise<void>;
   updateItem: (id: string, quantity: number, token?: string) => Promise<void>;
   removeItem: (id: string, token?: string) => Promise<void>;
   mergeCart: (token: string) => Promise<void>;
@@ -95,11 +102,11 @@ export const useCartStore = create<CartState>((set, get) => ({
     }
   },
 
-  addItem: async (productId, quantity = 1, token) => {
+  addItem: async (productId, quantity = 1, token, variantId) => {
     const res = await fetch(`${API}/cart`, {
       method: 'POST',
       headers: cartHeaders(token),
-      body: JSON.stringify({ productId, quantity }),
+      body: JSON.stringify({ productId, quantity, ...(variantId && { variantId }) }),
     });
     if (!res.ok) throw new Error('Failed to add to cart');
 
@@ -150,4 +157,4 @@ export const useCartStore = create<CartState>((set, get) => ({
 // Derived helpers
 export const cartCount = (items: CartItem[]) => items.reduce((s, i) => s + i.quantity, 0);
 export const cartTotal = (items: CartItem[]) =>
-  items.reduce((s, i) => s + Number(i.product.price) * i.quantity, 0);
+  items.reduce((s, i) => s + Number(i.variant?.price ?? i.product.price) * i.quantity, 0);

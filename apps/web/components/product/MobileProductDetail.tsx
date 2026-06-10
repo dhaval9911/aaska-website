@@ -13,7 +13,8 @@ import { appConfig } from '@aaska/config';
 
 import { useCartStore } from '@/lib/cart-store';
 import { WishlistButton } from '@/components/wishlist-button';
-import { Lightbox } from './ProductClientView';
+import { Lightbox, PriceDisplay } from './ProductClientView';
+import type { ProductVariant } from './ProductClientView';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,6 +40,9 @@ export interface MobileProductDetailProps {
     images: string[];
     category: Category;
     createdAt: string;
+    hasVariants: boolean;
+    variants: ProductVariant[];
+    showStock: boolean;
   };
 }
 
@@ -130,54 +134,6 @@ function ImageCarousel({
 }
 
 // ---------------------------------------------------------------------------
-// Price display
-// ---------------------------------------------------------------------------
-
-function PriceDisplay({
-  price,
-  compareAtPrice,
-  showComparePrice,
-  unit,
-}: {
-  price: string;
-  compareAtPrice: string | null;
-  showComparePrice: boolean;
-  unit: string;
-}) {
-  const selling = Number(price);
-  const original = compareAtPrice ? Number(compareAtPrice) : null;
-  const isSale = showComparePrice && original !== null && original > selling;
-  const save = isSale ? original! - selling : 0;
-  const pct = isSale ? Math.round((save / original!) * 100) : 0;
-
-  return (
-    <div className="space-y-1">
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        {isSale && (
-          <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
-            SALE
-          </span>
-        )}
-        <span className={`text-3xl font-black ${isSale ? 'text-[#D4860B]' : 'text-stone-900'}`}>
-          ₹{selling.toLocaleString('en-IN')}
-        </span>
-        {isSale && (
-          <span className="text-lg text-stone-400 line-through">
-            ₹{original!.toLocaleString('en-IN')}
-          </span>
-        )}
-        <span className="text-sm text-stone-400">/ {unit}</span>
-      </div>
-      {isSale && (
-        <p className="text-xs font-semibold text-green-600">
-          You save ₹{save.toLocaleString('en-IN')} ({pct}% off)
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Accordion item
 // ---------------------------------------------------------------------------
 
@@ -216,14 +172,30 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
 
+  // Variant selection
+  const defaultVariant = product.variants.find((v) => v.isDefault) ?? product.variants[0] ?? null;
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
+    product.hasVariants ? defaultVariant : null,
+  );
+
   const [qty, setQty] = useState(1);
   const [descExpanded, setDescExpanded] = useState(false);
   const [cartState, setCartState] = useState<'idle' | 'loading' | 'done'>('idle');
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
-  const inStock = product.stock > 0;
+  // Effective values — variant overrides base when hasVariants=true
+  const effectivePrice = selectedVariant ? selectedVariant.price : product.price;
+  const effectiveCompareAt = selectedVariant
+    ? selectedVariant.compareAtPrice
+    : product.compareAtPrice;
+  const effectiveShowCompare = selectedVariant
+    ? selectedVariant.showComparePrice
+    : product.showComparePrice;
+  const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
+
+  const inStock = effectiveStock > 0;
   const maxQty = 10;
-  const price = Number(product.price);
+  const price = Number(effectivePrice);
 
   const waText = encodeURIComponent(
     `Hi Resin Dreams! I'd like to order *${product.name}* (Qty: ${qty}) — ₹${(price * qty).toLocaleString('en-IN')}. Can you help?`,
@@ -232,9 +204,10 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
 
   async function handleAddToCart() {
     if (cartState === 'loading' || !inStock) return;
+    if (product.hasVariants && !selectedVariant) return;
     setCartState('loading');
     try {
-      await addItem(product.id, qty, token);
+      await addItem(product.id, qty, token, selectedVariant?.id);
       setCartState('done');
       openCart();
       setTimeout(() => setCartState('idle'), 2000);
@@ -277,33 +250,68 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
         {/* Name */}
         <h1 className="text-2xl font-black leading-tight text-stone-900">{product.name}</h1>
 
-        {/* Price */}
+        {/* Price — updates when variant selected */}
         <PriceDisplay
-          price={product.price}
-          compareAtPrice={product.compareAtPrice}
-          showComparePrice={product.showComparePrice}
+          price={effectivePrice}
+          compareAtPrice={effectiveCompareAt}
+          showComparePrice={effectiveShowCompare}
           unit={product.unit}
         />
 
-        {/* Unit pill */}
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-lg border-2 border-stone-900 bg-stone-900 px-3.5 py-1.5 text-sm font-semibold text-white">
-            {product.unit}
-          </span>
-        </div>
+        {/* ── Variant selector pills ── */}
+        {product.hasVariants && product.variants.length > 0 && (
+          <div>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-stone-400">
+              Size / Option
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {product.variants.map((v) => {
+                const active = selectedVariant?.id === v.id;
+                const outOfStock = v.stock === 0;
+                return (
+                  <button
+                    key={v.id}
+                    onClick={() => !outOfStock && setSelectedVariant(v)}
+                    disabled={outOfStock}
+                    className={`rounded-lg border-2 px-3.5 py-1.5 text-sm font-semibold transition-all ${
+                      active
+                        ? 'border-stone-900 bg-stone-900 text-white'
+                        : outOfStock
+                          ? 'cursor-not-allowed border-stone-200 text-stone-300 line-through'
+                          : 'border-stone-200 text-stone-700 active:bg-stone-100'
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-        {/* Stock badge */}
-        <div>
-          {inStock ? (
-            <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-              {product.stock <= 5 ? `Only ${product.stock} left!` : 'In Stock'}
+        {/* Unit pill (non-variant products only) */}
+        {!product.hasVariants && (
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-lg border-2 border-stone-900 bg-stone-900 px-3.5 py-1.5 text-sm font-semibold text-white">
+              {product.unit}
             </span>
-          ) : (
-            <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
-              Out of Stock
-            </span>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Stock badge — shown when showStock is on, or always when out of stock */}
+        {(product.showStock || !inStock) && (
+          <div>
+            {inStock ? (
+              <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+                {effectiveStock <= 5 ? `Only ${effectiveStock} left!` : 'In Stock'}
+              </span>
+            ) : (
+              <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
+                Out of Stock
+              </span>
+            )}
+          </div>
+        )}
 
         {/* ── 3. Quantity stepper ── */}
         {inStock && (
@@ -351,7 +359,7 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
         {product.description && (
           <div className="space-y-1">
             <p
-              className={`text-sm leading-relaxed text-stone-600 ${
+              className={`whitespace-pre-line text-sm leading-relaxed text-stone-600 ${
                 !descExpanded && isLongDesc ? 'line-clamp-3' : ''
               }`}
             >
@@ -373,8 +381,9 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
           <AccordionItem title="Product details">
             <ul className="space-y-1">
               <li>Unit: {product.unit}</li>
-              <li>Stock: {product.stock > 0 ? `${product.stock} available` : 'Out of stock'}</li>
+              <li>Stock: {effectiveStock > 0 ? `${effectiveStock} available` : 'Out of stock'}</li>
               <li>Category: {product.category.name}</li>
+              {selectedVariant && <li>Selected: {selectedVariant.label}</li>}
             </ul>
           </AccordionItem>
           <AccordionItem title="Shipping & handling">
@@ -409,22 +418,31 @@ export function MobileProductDetail({ product }: MobileProductDetailProps) {
                 size="md"
                 className="!h-12 !w-12 flex-shrink-0 rounded-xl"
               />
-              <button
-                onClick={handleAddToCart}
-                disabled={cartState === 'loading'}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-sm transition active:scale-[.98] ${
-                  cartState === 'done' ? 'bg-green-500' : 'bg-[#D4860B] hover:bg-[#b8720a]'
-                }`}
-              >
-                {cartState === 'loading' && (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                )}
-                {cartState === 'done'
-                  ? '✓ Added to cart'
-                  : cartState === 'loading'
-                    ? 'Adding…'
-                    : `Add to cart — ₹${(price * qty).toLocaleString('en-IN')}`}
-              </button>
+              {product.hasVariants && !selectedVariant ? (
+                <button
+                  disabled
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-stone-200 py-3 text-sm font-bold text-stone-500"
+                >
+                  Select a size
+                </button>
+              ) : (
+                <button
+                  onClick={handleAddToCart}
+                  disabled={cartState === 'loading'}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-sm transition active:scale-[.98] ${
+                    cartState === 'done' ? 'bg-green-500' : 'bg-[#D4860B] hover:bg-[#b8720a]'
+                  }`}
+                >
+                  {cartState === 'loading' && (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  )}
+                  {cartState === 'done'
+                    ? '✓ Added to cart'
+                    : cartState === 'loading'
+                      ? 'Adding…'
+                      : `Add to cart — ₹${(price * qty).toLocaleString('en-IN')}`}
+                </button>
+              )}
             </div>
             <a
               href={waLink}

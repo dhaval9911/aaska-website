@@ -5,10 +5,23 @@ import { PageShell } from '@aaska/ui';
 import { apiFetch } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { ProductForm } from '@/components/admin/product-form';
+import type { ExistingVariant } from '@/components/admin/product-form';
 
 interface Category {
   id: string;
   name: string;
+}
+
+interface ProductVariant {
+  id: string;
+  label: string;
+  price: string;
+  compareAtPrice: string | null;
+  showComparePrice: boolean;
+  stock: number;
+  sku: string | null;
+  isDefault: boolean;
+  displayOrder: number;
 }
 
 interface Product {
@@ -24,6 +37,9 @@ interface Product {
   images: string[];
   categoryId: string;
   category: Category;
+  hasVariants: boolean;
+  variants: ProductVariant[];
+  showStock: boolean;
 }
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -37,6 +53,18 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   ]);
 
   if (!product) notFound();
+
+  const variants: ExistingVariant[] = (product.variants ?? []).map((v) => ({
+    id: v.id,
+    label: v.label,
+    price: v.price,
+    compareAtPrice: v.compareAtPrice,
+    showComparePrice: v.showComparePrice,
+    stock: v.stock,
+    sku: v.sku,
+    isDefault: v.isDefault,
+    displayOrder: v.displayOrder,
+  }));
 
   return (
     <PageShell className="max-w-2xl space-y-6">
@@ -64,6 +92,9 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
           categoryId: product.categoryId,
           compareAtPrice: product.compareAtPrice,
           showComparePrice: product.showComparePrice,
+          hasVariants: product.hasVariants,
+          showStock: product.showStock,
+          variants,
         }}
       />
     </PageShell>

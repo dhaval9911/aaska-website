@@ -10,11 +10,18 @@ import { useCartStore } from '@/lib/cart-store';
 interface AddToCartProps {
   productId: string;
   stock: number;
+  variantId?: string;
   className?: string;
   size?: 'default' | 'sm';
 }
 
-export function AddToCart({ productId, stock, className, size = 'default' }: AddToCartProps) {
+export function AddToCart({
+  productId,
+  stock,
+  variantId,
+  className,
+  size = 'default',
+}: AddToCartProps) {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string } | null)?.accessToken;
   const addItem = useCartStore((s) => s.addItem);
@@ -30,12 +37,12 @@ export function AddToCart({ productId, stock, className, size = 'default' }: Add
   }
 
   async function handleAdd(e: React.MouseEvent) {
-    e.preventDefault(); // prevent link navigation if inside a card link
+    e.preventDefault();
     e.stopPropagation();
     if (state === 'loading') return;
     setState('loading');
     try {
-      await addItem(productId, 1, token);
+      await addItem(productId, 1, token, variantId);
       setState('done');
       setTimeout(() => setState('idle'), 1500);
     } catch {

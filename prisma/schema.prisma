@@ -67,33 +67,57 @@ model Category {
 }
 
 model Product {
-  id               String      @id @default(cuid())
+  id               String           @id @default(cuid())
   name             String
-  slug             String      @unique
+  slug             String           @unique
   description      String
-  price            Decimal     @db.Decimal(10, 2)
+  price            Decimal          @db.Decimal(10, 2)
   // Compare-at / "was" price shown crossed-out next to the selling price
-  compareAtPrice   Decimal?    @db.Decimal(10, 2)
-  showComparePrice Boolean     @default(false)
+  compareAtPrice   Decimal?         @db.Decimal(10, 2)
+  showComparePrice Boolean          @default(false)
   stock            Int
   unit             ProductUnit
   images           String[]
   categoryId       String
-  category         Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category         Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   cartItems        CartItem[]
-  createdAt        DateTime    @default(now())
+  // Variant support — if hasVariants=true, price/stock come from variants
+  hasVariants      Boolean          @default(false)
+  variants         ProductVariant[]
+  // Controls whether the stock count badge is shown on the product detail page
+  showStock        Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+}
+
+model ProductVariant {
+  id               String    @id @default(cuid())
+  productId        String
+  product          Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label            String
+  price            Decimal   @db.Decimal(10, 2)
+  compareAtPrice   Decimal?  @db.Decimal(10, 2)
+  showComparePrice Boolean   @default(false)
+  stock            Int       @default(0)
+  sku              String?
+  isDefault        Boolean   @default(false)
+  displayOrder     Int       @default(0)
+  createdAt        DateTime  @default(now())
+
+  cartItems        CartItem[]
 }
 
 model CartItem {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
   sessionId String?
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity  Int      @default(1)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  quantity  Int             @default(1)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
   @@unique([userId, productId])
   @@unique([sessionId, productId])

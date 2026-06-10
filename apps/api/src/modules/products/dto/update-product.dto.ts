@@ -8,8 +8,11 @@ import {
   IsString,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import { ProductUnit } from '@prisma/client';
+
+import { CreateProductVariantDto } from './create-product-variant.dto';
 
 export class UpdateProductDto {
   @IsOptional()
@@ -60,4 +63,24 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   categoryId?: string;
+
+  /** Flip the variants toggle.  Pass variants[] to replace all existing variants. */
+  @IsOptional()
+  @IsBoolean()
+  hasVariants?: boolean;
+
+  /** When false, the stock count badge is hidden on the product detail page. */
+  @IsOptional()
+  @IsBoolean()
+  showStock?: boolean;
+
+  /**
+   * Full replacement set of variants.  When provided, all existing variants for
+   * this product are deleted and replaced with this array.
+   */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductVariantDto)
+  variants?: CreateProductVariantDto[];
 }

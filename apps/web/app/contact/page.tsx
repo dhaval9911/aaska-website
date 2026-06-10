@@ -83,7 +83,7 @@ export default function ContactPage() {
 
         {/* ── Website ── */}
         <a
-          href="https://resindreamss.com"
+          href="https://resindreamstore.com"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-4 rounded-2xl border border-stone-100 bg-white px-5 py-4 shadow-sm transition hover:shadow-md active:scale-[.98]"
@@ -105,7 +105,7 @@ export default function ContactPage() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="font-bold text-stone-900">Website</p>
-            <p className="text-sm text-stone-500">resindreamss.com</p>
+            <p className="text-sm text-stone-500">resindreamstore.com</p>
           </div>
           <svg
             className="h-5 w-5 text-stone-300 shrink-0"

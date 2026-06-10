@@ -1,9 +1,14 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { PageShell } from '@aaska/ui';
 
 import { auth } from '@/lib/auth';
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 const adminNav = [
   { href: '/admin', label: 'Dashboard' },

@@ -9,8 +9,12 @@ import {
   IsString,
   Min,
   MinLength,
+  ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 import { ProductUnit } from '@prisma/client';
+
+import { CreateProductVariantDto } from './create-product-variant.dto';
 
 export class CreateProductDto {
   @IsString()
@@ -25,6 +29,11 @@ export class CreateProductDto {
   @IsNotEmpty()
   description!: string;
 
+  /**
+   * Base selling price.  When hasVariants=true this is derived automatically
+   * from the default variant's price and does not need to be provided.
+   */
+  @ValidateIf((o) => !o.hasVariants)
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
@@ -41,6 +50,11 @@ export class CreateProductDto {
   @IsBoolean()
   showComparePrice?: boolean;
 
+  /**
+   * Base stock.  When hasVariants=true this is derived automatically from the
+   * sum of variant stocks and does not need to be provided.
+   */
+  @ValidateIf((o) => !o.hasVariants)
   @Type(() => Number)
   @IsNumber()
   @Min(0)
@@ -57,4 +71,20 @@ export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
   categoryId!: string;
+
+  /** When true, price/stock/compareAtPrice come from the variants array. */
+  @IsOptional()
+  @IsBoolean()
+  hasVariants?: boolean;
+
+  /** When false, the stock count badge is hidden on the product detail page. */
+  @IsOptional()
+  @IsBoolean()
+  showStock?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProductVariantDto)
+  variants?: CreateProductVariantDto[];
 }

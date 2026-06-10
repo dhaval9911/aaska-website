@@ -7,7 +7,8 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "lint": "eslint src --ext .ts",
-    "test": "echo \"No tests for @aaska/api\""
+    "test": "echo \"No tests for @aaska/api\"",
+    "db:clear-products": "tsx src/scripts/clear-products-categories.ts"
   },
   "dependencies": {
     "@aaska/types": "workspace:*",

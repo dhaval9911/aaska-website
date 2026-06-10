@@ -1,8 +1,15 @@
+import type { Metadata } from 'next';
+
 import { PageShell } from '@aaska/ui';
 
 import { apiFetch } from '@/lib/api';
 import { ProductsClient } from '@/components/product/ProductsClient';
 import type { SortOrder } from '@/components/product/MobileFilterSheet';
+
+export const metadata: Metadata = {
+  title: 'All Products | Resin Dreams',
+  description: 'Browse our full collection of resin art products and raw materials.',
+};
 
 interface Category {
   id: string;

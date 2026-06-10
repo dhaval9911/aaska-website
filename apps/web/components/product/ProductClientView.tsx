@@ -15,6 +15,17 @@ import { MobileProductDetail } from './MobileProductDetail';
 // Shared types
 // ---------------------------------------------------------------------------
 
+export interface ProductVariant {
+  id: string;
+  label: string;
+  price: string;
+  compareAtPrice: string | null;
+  showComparePrice: boolean;
+  stock: number;
+  isDefault: boolean;
+  displayOrder: number;
+}
+
 interface Category {
   id: string;
   name: string;
@@ -35,6 +46,9 @@ export interface ProductClientViewProps {
     images: string[];
     category: Category;
     createdAt: string;
+    hasVariants: boolean;
+    variants: ProductVariant[];
+    showStock: boolean;
   };
 }
 
@@ -198,7 +212,6 @@ function DesktopGallery({ images, name }: { images: string[]; name: string }) {
                 alt={name}
                 className="aspect-square w-full rounded-3xl object-cover transition-opacity duration-200"
               />
-              {/* Zoom hint */}
               <div className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-stone-500 opacity-0 shadow transition-opacity group-hover:opacity-100">
                 <svg
                   className="h-4 w-4"
@@ -232,7 +245,7 @@ function DesktopGallery({ images, name }: { images: string[]; name: string }) {
 // Price display — handles compare/sale price
 // ---------------------------------------------------------------------------
 
-function PriceDisplay({
+export function PriceDisplay({
   price,
   compareAtPrice,
   showComparePrice,
@@ -283,14 +296,31 @@ function PriceDisplay({
 export function ProductClientView({ product }: ProductClientViewProps) {
   const isMobile = useIsMobile();
 
+  // Variant selection (desktop). Pre-select the default variant.
+  const defaultVariant = product.variants.find((v) => v.isDefault) ?? product.variants[0] ?? null;
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
+    product.hasVariants ? defaultVariant : null,
+  );
+
   if (isMobile) {
     return <MobileProductDetail product={product} />;
   }
 
-  const inStock = product.stock > 0;
+  // Effective price/stock — variant overrides base product when hasVariants=true
+  const effectivePrice = selectedVariant ? selectedVariant.price : product.price;
+  const effectiveCompareAt = selectedVariant
+    ? selectedVariant.compareAtPrice
+    : product.compareAtPrice;
+  const effectiveShowCompare = selectedVariant
+    ? selectedVariant.showComparePrice
+    : product.showComparePrice;
+  const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
+  const inStock = effectiveStock > 0;
 
   const waText = encodeURIComponent(
-    `Hi Resin Dreams! I'd like to order *${product.name}* — ₹${Number(product.price).toLocaleString('en-IN')}. Can you help?`,
+    `Hi Resin Dreams! I'd like to order *${product.name}*${
+      selectedVariant ? ` (${selectedVariant.label})` : ''
+    } — ₹${Number(effectivePrice).toLocaleString('en-IN')}. Can you help?`,
   );
   const waLink = `https://wa.me/${appConfig.businessWhatsapp}?text=${waText}`;
 
@@ -336,56 +366,109 @@ export function ProductClientView({ product }: ProductClientViewProps) {
             </h1>
           </div>
 
-          {/* Price */}
+          {/* Price — updates when variant is selected */}
           <PriceDisplay
-            price={product.price}
-            compareAtPrice={product.compareAtPrice}
-            showComparePrice={product.showComparePrice}
+            price={effectivePrice}
+            compareAtPrice={effectiveCompareAt}
+            showComparePrice={effectiveShowCompare}
             unit={product.unit}
           />
 
-          {/* Unit pill */}
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
-              Unit
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-lg border-2 border-stone-900 bg-stone-900 px-4 py-2 text-sm font-semibold text-white">
-                {product.unit}
-              </span>
+          {/* ── Variant selector pills ── */}
+          {product.hasVariants && product.variants.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
+                Size / Option
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {product.variants.map((v) => {
+                  const active = selectedVariant?.id === v.id;
+                  const outOfStock = v.stock === 0;
+                  return (
+                    <button
+                      key={v.id}
+                      onClick={() => !outOfStock && setSelectedVariant(v)}
+                      disabled={outOfStock}
+                      className={`relative rounded-lg border-2 px-4 py-2 text-sm font-semibold transition-all ${
+                        active
+                          ? 'border-stone-900 bg-stone-900 text-white'
+                          : outOfStock
+                            ? 'cursor-not-allowed border-stone-200 text-stone-300 line-through'
+                            : 'border-stone-200 text-stone-700 hover:border-stone-400'
+                      }`}
+                    >
+                      {v.label}
+                      {outOfStock && (
+                        <span className="absolute -right-1.5 -top-1.5 rounded-full bg-stone-400 px-1 text-[9px] font-bold text-white">
+                          sold
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Unit pill (shown for non-variant products only) */}
+          {!product.hasVariants && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
+                Unit
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-lg border-2 border-stone-900 bg-stone-900 px-4 py-2 text-sm font-semibold text-white">
+                  {product.unit}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Description */}
           <div className="rounded-2xl border border-stone-100 bg-stone-50 p-4">
-            <p className="text-sm leading-relaxed text-stone-600">{product.description}</p>
+            <p className="whitespace-pre-line text-sm leading-relaxed text-stone-600">
+              {product.description}
+            </p>
           </div>
 
-          {/* Stock badge */}
-          <div>
-            <span
-              className={`rounded-full px-3 py-1 text-sm font-medium ${
-                inStock ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
-              }`}
-            >
-              {inStock
-                ? product.stock <= 5
-                  ? `Only ${product.stock} left!`
-                  : `${product.stock} in stock`
-                : 'Out of stock'}
-            </span>
-          </div>
+          {/* Stock badge — only shown when showStock is true or product is out of stock */}
+          {(product.showStock || !inStock) && (
+            <div>
+              <span
+                className={`rounded-full px-3 py-1 text-sm font-medium ${
+                  inStock ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                }`}
+              >
+                {inStock
+                  ? effectiveStock <= 5
+                    ? `Only ${effectiveStock} left!`
+                    : `${effectiveStock} in stock`
+                  : 'Out of stock'}
+              </span>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <AddToCart productId={product.id} stock={product.stock} className="flex-1" />
+              {product.hasVariants && !selectedVariant ? (
+                <Button disabled className="flex-1">
+                  Select a size
+                </Button>
+              ) : (
+                <AddToCart
+                  productId={product.id}
+                  variantId={selectedVariant?.id}
+                  stock={effectiveStock}
+                  className="flex-1"
+                />
+              )}
               <WishlistButton
                 item={{
                   id: product.id,
                   name: product.name,
                   slug: product.slug,
-                  price: product.price,
+                  price: effectivePrice,
                   images: product.images,
                   unit: product.unit,
                 }}
