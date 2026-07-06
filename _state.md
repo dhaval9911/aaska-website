@@ -1,6 +1,6 @@
 # Aaska Website — Project State
 
-> Last updated: 2026-06-10
+> Last updated: 2026-07-06
 > Monorepo root: `/Users/dc/private/aaska-website`
 
 ---
@@ -195,7 +195,10 @@ Docker containers running:
 
 ## What Is In Progress
 
-Nothing — all planned work is complete and deployed live at `https://resindreamstore.com`.
+All code is committed and pushed to GitHub. Pending deployment on server:
+
+1. Run Prisma migration on server: `docker exec aaska-postgres psql -U aaska -d aaska_db -c "ALTER TABLE \"Order\" ADD COLUMN IF NOT EXISTS \"deletedAt\" TIMESTAMP(3);"`
+2. Then record migration in `_prisma_migrations` and rebuild + restart containers
 
 ---
 
@@ -395,6 +398,18 @@ sudo systemctl daemon-reload && sudo systemctl enable aaska.service
 ```
 
 ---
+
+### Phase 5 — Order soft-delete, revenue fix, product card redesign (2026-07-06)
+
+- **Revenue fix**: `getAdminStats()` now counts only `status='DELIVERED'` orders (was `notIn: ['CANCELLED']`)
+- **Soft delete / trash**: `deletedAt DateTime?` added to Order model; deleted orders hidden from all lists and revenue; `/admin/orders/trash` page with restore; "Move to Trash" button on order detail
+- **New API endpoints**: `DELETE /orders/:id` (soft delete), `PATCH /orders/:id/restore`, `GET /orders/admin/trash`
+- **Products page**: Cards redesigned — "View" + "Add to Cart" / "Choose Options" (for variant products) buttons side-by-side
+- **Mobile + button fix**: Routes to product page for `hasVariants=true` products
+- **Admin orders**: Mobile card view + desktop table view (responsive dual layout)
+- **WhatsApp number**: Changed to `9499554824`; owner alert sent to `7201874841` on new orders
+- **UPI ID**: `aaskashivam0411-1@okicici`
+- **Migration**: `prisma/migrations/20260706000000_order_soft_delete/migration.sql` — adds `deletedAt` column
 
 ## What Is Next (potential)
 
