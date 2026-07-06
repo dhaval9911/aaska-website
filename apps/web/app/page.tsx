@@ -60,6 +60,7 @@ interface Product {
   stock: number;
   unit: string;
   images: string[];
+  hasVariants: boolean;
   category: Category;
 }
 
@@ -126,6 +127,7 @@ export default async function HomePage() {
                     images: p.images,
                     unit: p.unit,
                     stock: p.stock,
+                    hasVariants: p.hasVariants,
                   }}
                 />
               ))}

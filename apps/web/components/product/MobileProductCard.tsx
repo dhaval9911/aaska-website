@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 import { useCartStore } from '@/lib/cart-store';
@@ -17,6 +18,8 @@ export interface ProductCardData {
   images: string[];
   unit: string;
   stock: number;
+  /** If true, tapping "+" navigates to product page to pick a variant */
+  hasVariants?: boolean;
   /** Show "NEW" badge */
   isNew?: boolean;
 }
@@ -25,6 +28,7 @@ export function MobileProductCard({ product }: { product: ProductCardData }) {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string } | null)?.accessToken;
   const addItem = useCartStore((s) => s.addItem);
+  const router = useRouter();
 
   const [cartState, setCartState] = useState<'idle' | 'loading' | 'done'>('idle');
 
@@ -34,7 +38,15 @@ export function MobileProductCard({ product }: { product: ProductCardData }) {
   async function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (cartState !== 'idle' || outOfStock) return;
+    if (outOfStock) return;
+
+    // Product has variants — send user to product page to pick one
+    if (product.hasVariants) {
+      router.push(`/products/${product.slug}`);
+      return;
+    }
+
+    if (cartState !== 'idle') return;
     setCartState('loading');
     try {
       await addItem(product.id, 1, token);
@@ -117,17 +129,21 @@ export function MobileProductCard({ product }: { product: ProductCardData }) {
             )}
           </div>
 
-          {/* Compact add-to-cart */}
+          {/* Compact add-to-cart / choose options */}
           <button
             onClick={handleAddToCart}
             disabled={outOfStock || cartState === 'loading'}
-            aria-label={outOfStock ? 'Out of stock' : 'Add to cart'}
+            aria-label={
+              outOfStock ? 'Out of stock' : product.hasVariants ? 'Choose options' : 'Add to cart'
+            }
             className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-150 ${
               outOfStock
                 ? 'cursor-not-allowed bg-stone-200 text-stone-400'
                 : cartState === 'done'
                   ? 'scale-110 bg-green-500 text-white'
-                  : 'bg-[#D4860B] text-white hover:bg-[#b8720a] active:scale-90'
+                  : product.hasVariants
+                    ? 'bg-stone-800 text-white active:scale-90'
+                    : 'bg-[#D4860B] text-white hover:bg-[#b8720a] active:scale-90'
             }`}
           >
             {cartState === 'done' ? (
@@ -140,6 +156,17 @@ export function MobileProductCard({ product }: { product: ProductCardData }) {
                 strokeWidth={3}
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : product.hasVariants ? (
+              /* Options arrow */
+              <svg
+                className="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             ) : (
               /* Plus */

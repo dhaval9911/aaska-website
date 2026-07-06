@@ -22,6 +22,10 @@ export class WhatsappService {
     return process.env.UPI_ID ?? 'aaska@upi';
   }
 
+  private get ownerNumber(): string {
+    return process.env.OWNER_WHATSAPP ?? '917201874841';
+  }
+
   /** Send a plain-text message via the local whatsapp-web.js service. */
   private async send(number: string, message: string): Promise<void> {
     const url = `${this.serviceUrl}/send`;
@@ -83,6 +87,31 @@ export class WhatsappService {
       this.logger.log(`Sent payment instructions for ${order.orderNumber}`);
     } catch (err) {
       this.logger.error('Failed to send payment instructions', err);
+    }
+  }
+
+  async sendOwnerNewOrderAlert(order: OrderSnapshot): Promise<void> {
+    try {
+      const itemLines = order.items
+        .map(
+          (i) =>
+            `- ${i.name} x${i.quantity} = Rs ${(i.price * i.quantity).toLocaleString('en-IN')}`,
+        )
+        .join('\n');
+
+      const message =
+        `🛒 *New Order Received!*\n\n` +
+        `Order: *#${order.orderNumber}*\n` +
+        `Customer: *${order.customerName}*\n` +
+        `WhatsApp: +${order.whatsappNumber}\n\n` +
+        `*Items:*\n${itemLines}\n\n` +
+        `*Total: Rs ${Number(order.totalAmount).toLocaleString('en-IN')}*\n\n` +
+        `View in admin: https://resindreamstore.com/admin/orders/${order.id}`;
+
+      await this.send(this.ownerNumber, message);
+      this.logger.log(`Sent new order alert to owner for ${order.orderNumber}`);
+    } catch (err) {
+      this.logger.error('Failed to send owner new order alert', err);
     }
   }
 

@@ -4,7 +4,7 @@ export const appConfig = {
     'Handcrafted resin art — frames, keychains, flower preservation, custom gifts and raw materials.',
   apiPrefix: '/api',
   /** Business WhatsApp number with country code — update before going live */
-  businessWhatsapp: '919016647981',
+  businessWhatsapp: '919499554824',
 };
 
 export const businessCategories = {

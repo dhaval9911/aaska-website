@@ -77,23 +77,31 @@ export class OrdersService {
     await this.prisma.cartItem.deleteMany({ where: cartWhere });
 
     // Send WhatsApp confirmation request — non-blocking; errors must never fail the order
+    const orderSnapshot = {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      whatsappNumber: order.whatsappNumber,
+      totalAmount: order.totalAmount.toString(),
+      items,
+    };
+
+    // Notify customer
     this.whatsapp
-      .sendOrderConfirmationRequest({
-        id: order.id,
-        orderNumber: order.orderNumber,
-        customerName: order.customerName,
-        whatsappNumber: order.whatsappNumber,
-        totalAmount: order.totalAmount.toString(),
-        items,
-      })
-      .catch((err) => this.logger.error('WhatsApp notification failed', err));
+      .sendOrderConfirmationRequest(orderSnapshot)
+      .catch((err) => this.logger.error('WhatsApp customer notification failed', err));
+
+    // Notify owner
+    this.whatsapp
+      .sendOwnerNewOrderAlert(orderSnapshot)
+      .catch((err) => this.logger.error('WhatsApp owner notification failed', err));
 
     return order;
   }
 
   async getUserOrders(userId: string) {
     return this.prisma.order.findMany({
-      where: { userId },
+      where: { userId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -108,7 +116,10 @@ export class OrdersService {
 
   async getAllOrders(status?: string) {
     return this.prisma.order.findMany({
-      where: status ? { status: status as never } : undefined,
+      where: {
+        deletedAt: null,
+        ...(status ? { status: status as never } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -123,19 +134,42 @@ export class OrdersService {
     });
   }
 
+  async getTrashedOrders() {
+    return this.prisma.order.findMany({
+      where: { deletedAt: { not: null } },
+      orderBy: { deletedAt: 'desc' },
+      select: {
+        id: true,
+        orderNumber: true,
+        customerName: true,
+        whatsappNumber: true,
+        totalAmount: true,
+        status: true,
+        createdAt: true,
+        deletedAt: true,
+        items: true,
+      },
+    });
+  }
+
   async getAdminStats() {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [todayOrders, pendingConfirmations, monthRevenue] = await Promise.all([
-      this.prisma.order.count({ where: { createdAt: { gte: todayStart } } }),
-      this.prisma.order.count({ where: { status: 'PENDING_WHATSAPP' as never } }),
+      this.prisma.order.count({
+        where: { createdAt: { gte: todayStart }, deletedAt: null },
+      }),
+      this.prisma.order.count({
+        where: { status: 'PENDING_WHATSAPP' as never, deletedAt: null },
+      }),
       this.prisma.order.aggregate({
         _sum: { totalAmount: true },
         where: {
           createdAt: { gte: monthStart },
-          status: { notIn: ['CANCELLED'] as never[] },
+          status: 'DELIVERED' as never,
+          deletedAt: null,
         },
       }),
     ]);
@@ -156,6 +190,8 @@ export class OrdersService {
   async updateStatus(id: string, dto: UpdateOrderStatusDto) {
     const order = await this.prisma.order.findUnique({ where: { id } });
     if (!order) throw new NotFoundException('Order not found.');
+    if (order.deletedAt) throw new BadRequestException('Cannot update a deleted order.');
+
     const updated = await this.prisma.order.update({ where: { id }, data: { status: dto.status } });
 
     const notifyStatuses = [
@@ -184,6 +220,20 @@ export class OrdersService {
     }
 
     return updated;
+  }
+
+  async softDeleteOrder(id: string) {
+    const order = await this.prisma.order.findUnique({ where: { id } });
+    if (!order) throw new NotFoundException('Order not found.');
+    if (order.deletedAt) throw new BadRequestException('Order is already in trash.');
+    return this.prisma.order.update({ where: { id }, data: { deletedAt: new Date() } });
+  }
+
+  async restoreOrder(id: string) {
+    const order = await this.prisma.order.findUnique({ where: { id } });
+    if (!order) throw new NotFoundException('Order not found.');
+    if (!order.deletedAt) throw new BadRequestException('Order is not in trash.');
+    return this.prisma.order.update({ where: { id }, data: { deletedAt: null } });
   }
 
   /** AASKA-YYYY-NNN — resets counter each calendar year */

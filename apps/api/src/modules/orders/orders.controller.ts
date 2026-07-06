@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Param,
@@ -51,6 +52,14 @@ export class OrdersController {
     return this.ordersService.getAllOrders(status);
   }
 
+  /** Admin: trashed orders. */
+  @Get('admin/trash')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getTrashedOrders() {
+    return this.ordersService.getTrashedOrders();
+  }
+
   /** Admin: dashboard stats. */
   @Get('admin/stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -71,5 +80,21 @@ export class OrdersController {
   @Roles('ADMIN')
   updateStatus(@Param('id') id: string, @Body() dto: UpdateOrderStatusDto) {
     return this.ordersService.updateStatus(id, dto);
+  }
+
+  /** Admin: move order to trash (soft delete). */
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  softDelete(@Param('id') id: string) {
+    return this.ordersService.softDeleteOrder(id);
+  }
+
+  /** Admin: restore order from trash. */
+  @Patch(':id/restore')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  restore(@Param('id') id: string) {
+    return this.ordersService.restoreOrder(id);
   }
 }

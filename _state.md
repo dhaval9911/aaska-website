@@ -1,6 +1,6 @@
 # Aaska Website — Project State
 
-> Last updated: 2026-06-03
+> Last updated: 2026-06-10
 > Monorepo root: `/Users/dc/private/aaska-website`
 
 ---
@@ -20,7 +20,7 @@ E-commerce platform for **Resin Dreams** — a resin art business. Sells handmad
 - **State:** Zustand v5 with `persist` (cart, wishlist)
 - **Admin data fetching:** TanStack React Query v5
 - **Forms:** React Hook Form + Zod
-- **Deployment:** Docker Compose (3 containers: `aaska-postgres`, `aaska-api`, `aaska-web`)
+- **Deployment:** Docker Compose (6 containers: `aaska-postgres`, `aaska-api`, `aaska-web`, `aaska-nginx`, `whatsapp-service`, `aaska-cloudflared`) on home server `192.168.2.50`; public domain `resindreamstore.com` via Cloudflare tunnel
 - **Image upload:** `POST /api/storage/upload` → returns `{ path: string }` (auto-compressed to WebP)
 
 ---
@@ -195,7 +195,7 @@ Docker containers running:
 
 ## What Is In Progress
 
-Nothing — all planned work is complete and deployed.
+Nothing — all planned work is complete and deployed live at `https://resindreamstore.com`.
 
 ---
 
@@ -341,6 +341,58 @@ Nothing — all planned work is complete and deployed.
 - Tiles expand per-image (not per-product): shows full range of the collection
 - Gallery lightbox is self-contained (separate from `Lightbox` in ProductClientView — different UX: product info card below image)
 - Wishlist moved out of bottom tab bar; users can access it from the Account section / profile page
+
+---
+
+## Deployment — Production Server (2026-06-10)
+
+**Server:** `192.168.2.50` (home server), user `dc`
+**Project dir:** `/home/dc/projects/aaska/`
+**Domain:** `https://resindreamstore.com` (Cloudflare tunnel → nginx:80)
+**Admin:** `dhavalchavda.6885@gmail.com` / `99403352`
+
+**All 6 containers running:**
+
+- `aaska-postgres` — PostgreSQL (data in `postgres_data` volume)
+- `aaska-api` — NestJS API
+- `aaska-web` — Next.js (NEXTAUTH_URL=https://resindreamstore.com)
+- `aaska-nginx` — Nginx reverse proxy (port 80)
+- `whatsapp-service` — WhatsApp notification service
+- `aaska-cloudflared` — Cloudflare tunnel (token in server `.env`)
+
+**Server .env location:** `/home/dc/projects/aaska/.env`
+**Key env vars on server:**
+
+- `CLOUDFLARE_TUNNEL_TOKEN=eyJ...` (tunnel to resindreamstore.com)
+- `NEXTAUTH_URL=https://resindreamstore.com`
+- `API_BASE_URL=http://api:4000/api` (hardcoded in docker-compose)
+
+**Deploy process:** rsync from local Mac → server, then `docker compose up -d` on server
+**Migration process:** Run SQL directly via `docker exec aaska-postgres psql`, then record in `_prisma_migrations`
+
+**Pending manual task:** Systemd auto-restart service (needs sudo on server):
+
+```bash
+sudo tee /etc/systemd/system/aaska.service > /dev/null << 'EOF'
+[Unit]
+Description=Aaska Website (Docker Compose)
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/dc/projects/aaska
+ExecStart=/usr/bin/docker compose up -d
+ExecStop=/usr/bin/docker compose down
+TimeoutStartSec=300
+User=dc
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl daemon-reload && sudo systemctl enable aaska.service
+```
 
 ---
 

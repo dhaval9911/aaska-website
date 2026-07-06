@@ -28,9 +28,12 @@ interface Product {
   slug: string;
   description: string;
   price: string;
+  compareAtPrice: string | null;
+  showComparePrice: boolean;
   stock: number;
   unit: string;
   images: string[];
+  hasVariants: boolean;
   category: Category;
 }
 
@@ -230,6 +233,7 @@ export function ProductsClient({
                   images: p.images,
                   unit: p.unit,
                   stock: p.stock,
+                  hasVariants: p.hasVariants,
                 }}
               />
             ))}
@@ -304,8 +308,12 @@ export function ProductsClient({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {displayed.map((p) => (
-            <Link key={p.id} href={`/products/${p.slug}`} className="group">
-              <Card className="h-full space-y-3 transition group-hover:shadow-md">
+            <Card
+              key={p.id}
+              className="group flex h-full flex-col space-y-3 transition hover:shadow-md"
+            >
+              {/* Clickable image + info area */}
+              <Link href={`/products/${p.slug}`} className="block">
                 <div className="relative">
                   {p.images[0] ? (
                     <img
@@ -316,7 +324,7 @@ export function ProductsClient({
                   ) : (
                     <div className="aspect-square w-full rounded-xl bg-stone-100" />
                   )}
-                  <div className="absolute right-2 top-2">
+                  <div className="absolute right-2 top-2" onClick={(e) => e.preventDefault()}>
                     <WishlistButton
                       item={{
                         id: p.id,
@@ -330,21 +338,51 @@ export function ProductsClient({
                     />
                   </div>
                 </div>
-                <div>
+                <div className="mt-3">
                   <p className="text-xs font-medium uppercase tracking-wider text-stone-400">
                     {p.category.name}
                   </p>
                   <h2 className="mt-1 font-bold text-stone-900 group-hover:text-bark">{p.name}</h2>
                   <p className="mt-1 line-clamp-2 text-sm text-stone-500">{p.description}</p>
                 </div>
-                <div className="flex items-center justify-between gap-2">
+              </Link>
+
+              {/* Price + action buttons — NOT inside the Link */}
+              <div className="mt-auto pt-1">
+                <div className="mb-3 flex items-baseline gap-2">
                   <span className="text-lg font-black text-stone-900">
                     ₹{Number(p.price).toLocaleString('en-IN')}
                   </span>
-                  <AddToCart productId={p.id} stock={p.stock} size="sm" />
+                  {p.showComparePrice &&
+                    p.compareAtPrice &&
+                    Number(p.compareAtPrice) > Number(p.price) && (
+                      <span className="text-sm text-stone-400 line-through">
+                        ₹{Number(p.compareAtPrice).toLocaleString('en-IN')}
+                      </span>
+                    )}
                 </div>
-              </Card>
-            </Link>
+                <div className="flex gap-2">
+                  <Link
+                    href={`/products/${p.slug}`}
+                    className="flex flex-1 items-center justify-center rounded-lg border border-stone-200 px-3 py-2 text-sm font-semibold text-stone-700 transition hover:border-stone-300 hover:bg-stone-50"
+                  >
+                    View
+                  </Link>
+                  {p.hasVariants ? (
+                    <Link
+                      href={`/products/${p.slug}`}
+                      className="flex flex-1 items-center justify-center rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-stone-700"
+                    >
+                      Choose Options
+                    </Link>
+                  ) : (
+                    <div className="flex-1">
+                      <AddToCart productId={p.id} stock={p.stock} className="w-full" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
           ))}
         </div>
       )}

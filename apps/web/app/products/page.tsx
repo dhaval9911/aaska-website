@@ -23,9 +23,12 @@ interface Product {
   slug: string;
   description: string;
   price: string;
+  compareAtPrice: string | null;
+  showComparePrice: boolean;
   stock: number;
   unit: string;
   images: string[];
+  hasVariants: boolean;
   category: Category;
 }
 

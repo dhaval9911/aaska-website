@@ -12,16 +12,9 @@ interface AddToCartProps {
   stock: number;
   variantId?: string;
   className?: string;
-  size?: 'default' | 'sm';
 }
 
-export function AddToCart({
-  productId,
-  stock,
-  variantId,
-  className,
-  size = 'default',
-}: AddToCartProps) {
+export function AddToCart({ productId, stock, variantId, className }: AddToCartProps) {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string } | null)?.accessToken;
   const addItem = useCartStore((s) => s.addItem);
@@ -52,7 +45,7 @@ export function AddToCart({
   }
 
   const label = {
-    idle: size === 'sm' ? 'Add' : 'Add to cart',
+    idle: 'Add to Cart',
     loading: '...',
     done: '✓ Added',
     error: 'Try again',
