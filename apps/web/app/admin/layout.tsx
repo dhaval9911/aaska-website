@@ -15,6 +15,7 @@ const adminNav = [
   { href: '/admin/orders', label: 'Orders' },
   { href: '/admin/products', label: 'Products' },
   { href: '/admin/categories', label: 'Categories' },
+  { href: '/admin/analytics', label: 'Analytics' },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

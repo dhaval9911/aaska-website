@@ -4,6 +4,7 @@ import { PageShell } from '@aaska/ui';
 
 import { apiFetch } from '@/lib/api';
 import { auth } from '@/lib/auth';
+import { TrashRowButton } from './trash-row-button';
 
 interface AdminOrder {
   id: string;
@@ -58,7 +59,7 @@ export default async function AdminOrdersPage({
   const session = await auth();
   const token = session?.accessToken ?? '';
 
-  const path = status ? `/orders/admin/all?status=${status}` : '/orders/admin/all';
+  const path = status ? `/orders/admin/all?status=${encodeURIComponent(status)}` : '/orders/admin/all';
   const orders = await apiFetch<AdminOrder[]>(path, { token }).catch(() => [] as AdminOrder[]);
 
   return (
@@ -177,13 +178,16 @@ export default async function AdminOrdersPage({
                     </div>
                   </div>
 
-                  {/* View button */}
-                  <Link
-                    href={`/admin/orders/${order.id}`}
-                    className="flex w-full items-center justify-center rounded-xl bg-stone-900 py-2.5 text-sm font-semibold text-white transition active:bg-stone-700"
-                  >
-                    View Order →
-                  </Link>
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/admin/orders/${order.id}`}
+                      className="flex flex-1 items-center justify-center rounded-xl bg-stone-900 py-2.5 text-sm font-semibold text-white transition active:bg-stone-700"
+                    >
+                      View Order →
+                    </Link>
+                    <TrashRowButton orderId={order.id} token={token} />
+                  </div>
                 </div>
               );
             })}
@@ -232,12 +236,15 @@ export default async function AdminOrdersPage({
                       })}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/admin/orders/${order.id}`}
-                        className="text-sm font-medium text-stone-600 transition hover:text-stone-900"
-                      >
-                        View →
-                      </Link>
+                      <div className="flex items-center justify-end">
+                        <Link
+                          href={`/admin/orders/${order.id}`}
+                          className="text-sm font-medium text-stone-600 transition hover:text-stone-900"
+                        >
+                          View →
+                        </Link>
+                        <TrashRowButton orderId={order.id} token={token} />
+                      </div>
                     </td>
                   </tr>
                 ))}

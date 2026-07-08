@@ -18,11 +18,12 @@
     "@nestjs/jwt": "^11.0.1",
     "@nestjs/platform-express": "^11.1.1",
     "@prisma/client": "^6.8.2",
-    "prisma": "^6.8.2",
     "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "dotenv": "^16.5.0",
+    "geoip-lite": "^2.0.3",
+    "prisma": "^6.8.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "sharp": "^0.33.5"
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
     "@types/express": "^5.0.6",
+    "@types/geoip-lite": "^1.4.4",
     "@types/multer": "^2.1.0",
     "@types/node": "^22.15.17",
     "tsx": "^4.19.4"

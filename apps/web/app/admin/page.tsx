@@ -49,7 +49,7 @@ export default async function AdminDashboard() {
       accent: stats.pendingConfirmations > 0 ? 'text-amber-600' : 'text-stone-900',
     },
     {
-      label: 'Revenue This Month',
+      label: 'Revenue This Month (Delivered)',
       value: `Rs ${stats.monthlyRevenue.toLocaleString('en-IN')}`,
       href: '/admin/orders',
       accent: 'text-emerald-700',

@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 import { CartDrawer } from '@/components/cart-drawer';
+import { PageTracker } from '@/components/analytics/PageTracker';
 import { ResponsiveLayout } from '@/components/layout/ResponsiveLayout';
 import { Providers } from '@/components/providers';
 import { SiteFooter } from '@/components/site-footer';
@@ -74,6 +75,7 @@ export default function RootLayout({
           }}
         />
         <Providers>
+          <PageTracker />
           {/*
            * CartDrawer sits outside ResponsiveLayout so it renders as a
            * full-viewport overlay on both mobile and desktop.

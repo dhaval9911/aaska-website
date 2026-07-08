@@ -140,3 +140,21 @@ model Order {
   updatedAt       DateTime    @updatedAt
 }
 
+// PRIVACY: We store hashed IPs (SHA-256) + approximate city/state only.
+// Raw IP addresses are never persisted. Add a line to the site's
+// privacy policy disclosing approximate location analytics collection.
+model PageVisit {
+  id        String   @id @default(cuid())
+  ipHash    String
+  country   String?
+  state     String?
+  city      String?
+  path      String
+  userAgent String?
+  referrer  String?
+  visitedAt DateTime @default(now())
+
+  @@index([visitedAt])
+  @@index([state])
+}
+
